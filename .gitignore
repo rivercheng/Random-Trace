@@ -1,0 +1,9 @@
+*.[oa]
+*~
+*.txt
+*.pyc
+*.so
+!./gsl.so
+test*
+output*
+
