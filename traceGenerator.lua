@@ -104,7 +104,7 @@ local function outputBeginTime()
 end
 
 local function outputQuitTime(t)
-    print(t, "END")
+    print(t, "QUIT")
 end
 
 function main()
@@ -142,7 +142,7 @@ lookupTable = {
     MOVE_LEFT   =   {"x",   -1},
     MOVE_RIGHT  =   {"x",    1},
     MOVE_UP     =   {"y",   -1},
-    MOVE_DOWN   =   {"z",    1},
+    MOVE_DOWN   =   {"y",    1},
     TILT_CLOCKWISE     = {"ax",   1},
     TILT_ANTICLOCKWISE = {"ax", -1},
     REVOLVE_CLOCKWISE  = {"ay",  1},
