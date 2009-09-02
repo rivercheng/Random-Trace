@@ -19,6 +19,10 @@ def generateRandomValue(dist, params):
         value = params
     return value
 
+def related_value(action):
+    axis = lookupTable[action][0]
+    return "state."+axis
+
 def chooseAction(continueDict, state):
     '''To choose whether to continue the previous direction,
     reverse the direction, or go to another direction.
@@ -28,11 +32,14 @@ def chooseAction(continueDict, state):
     then we only examine the 'z' value. The continueDict will give
     a probability to continue and a probability to reverse for each
     possible 'z' value.'''
-    choice = random.nextInt(3)
-    if choice == 0:
-        return "ZOOM_IN"
-    elif choice == 1:
-        return "ZOOM_OUT"
+    action = state.prevAction
+    v = eval(related_value(action))
+    p_continue, p_reverse = continueDict[action][v]
+    rand = random.nextDouble()
+    if rand <= p_continue:
+        return action
+    elif rand <= p_continue + p_reverse:
+        return reverseTable[action]
     else:
         return None
 
@@ -42,11 +49,42 @@ def changeAction(changeDict, state):
 
     the decision is based on the stability of the current state
     on each axis.'''
-    choice = random.nextInt(2)
-    if choice == 0:
-        return "MOVE_LEFT"
+    axis = lookupTable[action][0]
+    popularity = {}
+    ratePlus   = {}
+    rateMinus  = {}
+    for ax in ("x", "y", "z", "ax", "ay", "az"):
+        if ax != axis:
+            popularity[ax], ratePlus[ax], rateMinus[ax] = changeDict[ax][eval("state."+ax)]
+
+    totalReciprotocalPop = 0
+    acc_pop = []
+    selected_ax = None
+    for ax, pop in popularity.iteritems():
+        if (pop == 0):
+            selected_ax = ax
+            break
+        totalReciprotocalPop += (1 / pop)
+        acc_pop.append((totalReciprotocalPop, ax))
+
+    #normalize
+    if selected_ax is None:
+        for ax, ap in acc_pop.iteritems():
+            ap /= totalReciprotocalPop
+        rand = random.nextDouble()
+        for ax, ap in acc_pop.iteritems():
+            if rand <= ap:
+                selected_ax = ax
+                break
+    assert(selected_ax)
+
+    #Next to select directon:
+    propPlus = ratePlus / (ratePlus + rateMinus)
+    rand = random.nextDouble()
+    if rand < propPlus:
+        return plus_action[selected_ax]
     else:
-        return "MOVE_RIGHT"
+        return reverseTable[plus_action[selected_ax]]
 
 def chooseBeginAction(beginDict):
     '''In the beginning or after 'RESET', choose the first action
@@ -183,7 +221,28 @@ if __name__ == "__main__":
         "ROTATE_CLOCKWISE"   : ("az",  1),
         "ROTATE_ANTICLOCKWISE" : ("az", -1)
         }
+
+    reverseTable = {
+        "ZOOM_IN": "ZOOM_OUT",
+        "MOVE_LEFT": "MOVE_RIGHT",
+        "MOVE_UP": "MOVE_DOWN",
+        "TILT_CLOCKWISE" : "TILT_ANTICLOCKWISE",
+        "REVOLVE_CLOCKWISE"  : "REVOLVE_ANTICLOCKWISE",
+        "ROTATE_CLOCKWISE"   : "ROTATE_ANTICLOCKWISE"
+        }
+
+    for k, v in list(reverseTable.iteritems()):
+        reverseTable[v] = k
     
+
+    plusAction = {
+            "x" : "MOVE_RIGHT",
+            "y" : "MOVE_DOWN",
+            "z" : "ZOOM_OUT",
+            "ax" : "TILT_CLOCKWISE",
+            "ay" : "REVOLVE_CLOCKWISE",
+            "az" : "ROTATE_CLOCKWISE"
+            }
     main()
 
     
