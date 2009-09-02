@@ -3,6 +3,8 @@ import time
 import math
 
 def generateRandomValue(dist, params):
+    '''Generate a random value following the given
+    distribution.'''
     value = None
     if dist == "lognormal":
         miu, sigma = params
@@ -18,6 +20,14 @@ def generateRandomValue(dist, params):
     return value
 
 def chooseAction(continueDict, state):
+    '''To choose whether to continue the previous direction,
+    reverse the direction, or go to another direction.
+    
+    The decision is based on previous action and the 
+    current state. For example, if previous action is 'ZOOM IN',
+    then we only examine the 'z' value. The continueDict will give
+    a probability to continue and a probability to reverse for each
+    possible 'z' value.'''
     choice = random.nextInt(3)
     if choice == 0:
         return "ZOOM_IN"
@@ -27,6 +37,11 @@ def chooseAction(continueDict, state):
         return None
 
 def changeAction(changeDict, state):
+    '''To decide a new direction when a decision is made to 
+    change to a new direction rather than continue or reverse.
+
+    the decision is based on the stability of the current state
+    on each axis.'''
     choice = random.nextInt(2)
     if choice == 0:
         return "MOVE_LEFT"
@@ -34,6 +49,8 @@ def changeAction(changeDict, state):
         return "MOVE_RIGHT"
 
 def chooseBeginAction(beginDict):
+    '''In the beginning or after 'RESET', choose the first action
+    at the default view point.'''
     return "ZOOM_IN"
 
 
@@ -55,7 +72,7 @@ def generateActionList(times, nextAction, dist, params):
     return actions
 
 def updateState(state, nextAction, newTime):
-    #update coordinates
+    '''update the state after an action is chosen.'''
     if nextAction == "RESET":
         state.reset()
     else:
@@ -67,6 +84,8 @@ def updateState(state, nextAction, newTime):
     return state
 
 def loop(state, endTime):
+    '''keep choosing actions and updating the state until the session time
+    is expired.'''
     nextAction = None
     while(state.currentTime < endTime):
         if state.prevAction != "BEGIN" and state.prevAction != "RESET":
@@ -109,8 +128,11 @@ class Config:
 
  
 def main():
+    #choose session length (how long this session takes.
     sessionLength = generateRandomValue(config.sessionLengthDistribution,
                                         config.sessionLengthParameters)
+
+    #choose how long before the first action is made.
     startTime     = generateRandomValue(config.startTimeDistribution,
                                         config.startTimeParameters)
     endTime       = sessionLength
@@ -124,21 +146,29 @@ def main():
     
 if __name__ == "__main__":
     config = Config()
+    #Session length follows the lognormal distribution.
     config.sessionLengthDistribution = "lognormal"
     config.sessionLengthParameters   = (0.75432, math.exp(18.23))
+
+    #the inital time follows the general extreme distribution.
     config.startTimeDistribution     = "genextreme"
     config.startTimeParameters       = (-0.25772, 10281000, 1054700)
+
     config.quitTimeDistribution      = "constant"
     config.quitTimeParameters        = 0.2
+
     config.smallIntervalDistribution = "weibull"
     config.smallIntervalParameters   = (0.48351, 0, 372.66)
+    
     config.intervalDistribution      = "genextreme"
     config.intervalParameters        = (-0.51, 266370, 199870)
+    
     config.beginDict                 = {}
     config.timesDict                 = {}
     config.continueDict              = {}
     config.changeDict                = {}
 
+    #Define the effect of each possible action (except RESET).
     lookupTable = {
         "ZOOM_IN": ("z", -1),
         "ZOOM_OUT": ("z", 1),
