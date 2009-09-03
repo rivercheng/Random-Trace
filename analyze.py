@@ -1,7 +1,7 @@
 from __future__ import with_statement
 import sqlite3
 import sys
-import readline
+import cPickle
 MIN_DURATION = 20000
 
 def query(column, db, condition=None):
@@ -51,6 +51,64 @@ def count(db, condition):
     cursor = query("COUNT(*)", db, condition)
     return cursor.next()[0]
 
+def outputBeginProbability(actions, db, f):
+    beginDict = {}
+    print "The begin probability:"
+    for act in actions:
+        prob =  probability(db, "next_op = '%s'" % act, \
+                "next_op <> 'QUIT' AND (last_op = 'RESET' OR last_op = 'BEGIN')") 
+        print act, prob
+        beginDict[act] = prob
+    print
+    cPickle.dump(beginDict, f)
+
+
+def outputPopularity(ranges, db, f):
+    popularityDict = {}
+    print "Popularity:"
+    for col, range_ in ranges:
+        print "\tcolumn ", col, " :"
+        popularityDict[col] = {}
+        for value in range_:
+            prob = popularity(db, "%s=%d" % (col, value))
+            print "\t\t%-10d" % value, "%0.6f" % prob
+            popularityDict[col][value] = prob
+    print 
+    cPickle.dump(popularityDict, f)
+
+def outputContinueProbability(ranges, reverse_acts, db, f):
+    changeDict = {}
+    print "Change Probability:"
+    for col, range_ in ranges:
+        print "\tcolumn ", col, " :"
+        changeDict[col] = {}
+        for value in range_:
+            changeDict[col][value] = {}
+            for act in acts[col]:
+                #by default, the next action is to reverse.
+                changeDict[col][value][act] = (0, 1)
+                try:
+                    common = "last_op = '%s' AND %s = %d" % (act, col, value)
+                    count_ = count(db, common)
+                    prob =  prob_change(db, common)
+
+                    #check probability of reverse
+                    prob_rev =  probability(db, "next_op = '%s'" % reverse_acts[act], \
+                            common + " AND duration > %d" % MIN_DURATION)
+
+                    prob_reset_quit_ = prob_quit_reset(db, common)
+
+                    if prob is not None and prob_rev is not None and prob_reset_quit_ is not None:
+                        print "\t\t%-5d" % value, "%25s" % act, \
+                          "total: %5d" % count_, \
+                          "\tprob: %0.6f" % prob, \
+                          "\tprob_rev: %0.6f" % prob_rev, \
+                          "\tprob_r_q: %0.6f" % prob_reset_quit_
+                        changeDict[col][value][act] = (1-prob, prob_rev)
+                except ZeroDivisionError:
+                    pass
+    cPickle.dump(changeDict, f)
+
 if __name__ == "__main__":
     conn = sqlite3.connect(":memory:")
     db = "behavior"
@@ -82,45 +140,9 @@ if __name__ == "__main__":
         conn.execute("CREATE INDEX "+ col + " ON " + db + \
                 "(%s)" % col)
 
-    print "Popularity:"
-    
     ranges = []
     for col in cols:
         ranges.append( (col, range(db, col)) )
-
-    for col, range_ in ranges:
-        print "\tcolumn ", col, " :"
-        for value in range_:
-            print "\t\t%-10d" % value, "%0.6f" % popularity(db, "%s = %d" % (col, value))
-    print 
-
-    print "Percentage of Separate Pressing (duration > %s):" \
-            % MIN_DURATION, "\t", probability(db, "duration > %d" % MIN_DURATION)
-    print 
-    
-    print "General Probability of Actions:"
-    general_prob = {}
-    for action in (actions + ("QUIT", "RESET")):
-        prob =  probability(db, "next_op = '%s'" % action, "duration > %d" % MIN_DURATION)
-        general_prob[action] = prob
-        if prob is not None:
-            print "%30s" % action, ": ", "%0.4f" % prob
-    print
-
-    print "Change Probability:"
-    print "%30s" % "General", ": ", "%0.4f" % prob_change(db, None)
-    for action in actions:
-        prob = prob_change(db, "last_op = '%s'" % action)
-        if prob is not None:
-            print "%30s" % action, ": ", "%0.4f" % prob
-
-    print "Change to Probability:"
-    change_to_prob = {}
-    for action in (actions + ("QUIT", "RESET")):
-        prob = probability(db, "next_op = '%s'" % action, "next_op != last_op")
-        change_to_prob[action] = prob
-        if prob is not None:
-            print "%30s" % action, ": ", "%0.4f" % prob
     
     acts = {"x": ("MOVE_LEFT", "MOVE_RIGHT"), "y" : ("MOVE_UP", "MOVE_DOWN"), \
             "z" : ("ZOOM_IN", "ZOOM_OUT"), "ax": ("TILT_FORWARD", "TILT_BACKWARD"), \
@@ -133,55 +155,16 @@ if __name__ == "__main__":
 
     for key, value in list(reverse_acts.iteritems()):
         reverse_acts[value] = key
-
-    for col, range_ in ranges:
-        print "\tcolumn ", col, " :"
-        for value in range_:
-            for act in acts[col]:
-                try:
-                    common = "last_op = '%s' AND %s = %d" % (act, col, value)
-                    count_ = count(db, common)
-                    prob =  prob_change(db, common)
-
-                    #check probability of reverse
-                    prob_rev =  probability(db, "next_op = '%s'" % reverse_acts[act], \
-                            common + " AND duration > %d" % MIN_DURATION)
-
-                    prob_reset_quit_ = prob_quit_reset(db, common)
-
-                    if prob is not None and prob_rev is not None and prob_reset_quit_ is not None:
-                        print "\t\t%-5d" % value, "%25s" % act, \
-                          "total: %5d" % count_, \
-                          "\tprob: %0.6f" % prob, \
-                          "\tprob_rev: %0.6f" % prob_rev, \
-                          "\tprob_r_q: %0.6f" % prob_reset_quit_
-                except ZeroDivisionError:
-                    pass
     
-    print "The Selections During Change:"
-    #To see how users change direction.
-    for col, range_ in ranges:
-        print "\tcolumn ", col, " :"
-        for value in range_:
-            print
-            for act in (actions + ("QUIT", "RESET")):
-                try: 
-                    cond = "next_op = '%s'" % act
-                    act1 = acts[col][0]
-                    act2 = acts[col][1]
-                    common = "%s = %d AND last_op <> next_op AND last_op <> '%s' " \
-                              % (col, value, act1) + \
-                             "AND last_op <> '%s' AND duration > %d" \
-                              % (act2, MIN_DURATION)
-                    count_ = count(db, common)
-                    prob = probability(db, cond, common)
-                    if prob is not None:
-                        print "\t\t%-5d" % value, "%25s" % act, \
-                            "total: %5d" % count_,\
-                            "\tprob: %0.6f" % prob,\
-                            "\tratio: %0.4f" % (prob / change_to_prob[act])
-                except ZeroDivisionError:
-                    pass
+    with open("output.pickle", 'w') as out_file:
+        outputBeginProbability(actions, db, out_file)
+        outputPopularity(ranges, db, out_file)
+        outputContinueProbability(ranges, reverse_acts, db, out_file)
+    
+
+    
+
+
 
 
 

@@ -1,6 +1,8 @@
+from __future__ import with_statement
 import extend_random as random
 import time
 import math
+import cPickle
 
 def generateRandomValue(dist, params):
     '''Generate a random value following the given
@@ -23,6 +25,9 @@ def related_value(action):
     axis = lookupTable[action][0]
     return "state."+axis
 
+def related_axis(action):
+    return lookupTable[action][0]
+
 def chooseAction(continueDict, state):
     '''To choose whether to continue the previous direction,
     reverse the direction, or go to another direction.
@@ -33,8 +38,9 @@ def chooseAction(continueDict, state):
     a probability to continue and a probability to reverse for each
     possible 'z' value.'''
     action = state.prevAction
+    axis = related_axis(action)
     v = eval(related_value(action))
-    p_continue, p_reverse = continueDict[action][v]
+    p_continue, p_reverse = continueDict[axis][v][action]
     rand = random.nextDouble()
     if rand <= p_continue:
         return action
@@ -49,13 +55,20 @@ def changeAction(changeDict, state):
 
     the decision is based on the stability of the current state
     on each axis.'''
-    axis = lookupTable[action][0]
+    axis = lookupTable[state.prevAction][0]
     popularity = {}
     ratePlus   = {}
     rateMinus  = {}
     for ax in ("x", "y", "z", "ax", "ay", "az"):
         if ax != axis:
-            popularity[ax], ratePlus[ax], rateMinus[ax] = changeDict[ax][eval("state."+ax)]
+            v = eval("state."+ax)
+            popularity_curr = changeDict[ax][v]
+            popularity_plus = changeDict[ax].get(v+1, 0)
+            popularity_minus = changeDict[ax].get(v-1, 0)
+            ratePlus_ = popularity_plus / popularity_curr
+            rateMinus_ = popularity_minus / popularity_curr
+            popularity[ax], ratePlus[ax], rateMinus[ax] = popularity_curr, ratePlus_, rateMinus_
+
 
     totalReciprotocalPop = 0
     acc_pop = []
@@ -69,22 +82,22 @@ def changeAction(changeDict, state):
 
     #normalize
     if selected_ax is None:
-        for ax, ap in acc_pop.iteritems():
+        for ap, ax in acc_pop:
             ap /= totalReciprotocalPop
         rand = random.nextDouble()
-        for ax, ap in acc_pop.iteritems():
+        for ap, ax in acc_pop:
             if rand <= ap:
                 selected_ax = ax
                 break
     assert(selected_ax)
 
     #Next to select directon:
-    propPlus = ratePlus / (ratePlus + rateMinus)
+    propPlus = ratePlus[selected_ax] / (ratePlus[selected_ax] + rateMinus[selected_ax])
     rand = random.nextDouble()
     if rand < propPlus:
-        return plus_action[selected_ax]
+        return plusAction[selected_ax]
     else:
-        return reverseTable[plus_action[selected_ax]]
+        return reverseTable[plusAction[selected_ax]]
 
 def chooseBeginAction(beginDict):
     '''In the beginning or after 'RESET', choose the first action
@@ -115,7 +128,11 @@ def updateState(state, nextAction, newTime):
         state.reset()
     else:
         axis, value = lookupTable[nextAction]
-        exec ("state."+axis+" += value")
+        if axis in ("ax", "ay", "az"):
+            exec ("state."+axis+" = (state."+axis+"+ value) % 36")
+        else:
+            exec ("state."+axis+" += value")
+
     print(state.x, state.y, state.z, state.ax, state.ay, state.az)
     state.prevAction = nextAction
     state.currentTime = newTime
@@ -200,11 +217,16 @@ if __name__ == "__main__":
     
     config.intervalDistribution      = "genextreme"
     config.intervalParameters        = (-0.51, 266370, 199870)
+
+    with open("output.pickle") as input:
+        config.beginDict                 = cPickle.load(input)
+        config.changeDict                = cPickle.load(input)
+        config.continueDict              = cPickle.load(input)
+        config.timesDict                 = {}
     
-    config.beginDict                 = {}
-    config.timesDict                 = {}
-    config.continueDict              = {}
-    config.changeDict                = {}
+    print config.beginDict
+    print config.changeDict
+    print config.continueDict
 
     #Define the effect of each possible action (except RESET).
     lookupTable = {
