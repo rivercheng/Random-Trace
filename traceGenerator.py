@@ -22,10 +22,12 @@ def generateRandomValue(dist, params):
     return value
 
 def related_value(action):
+    '''return the name of the related axis of an action'''
     axis = lookupTable[action][0]
     return "state."+axis
 
 def related_axis(action):
+    '''return the name of the related axis of an action'''
     return lookupTable[action][0]
 
 def chooseAction(continueDict, state):
@@ -37,9 +39,11 @@ def chooseAction(continueDict, state):
     then we only examine the 'z' value. The continueDict will give
     a probability to continue and a probability to reverse for each
     possible 'z' value.'''
+    
     action = state.prevAction
     axis = related_axis(action)
     v = eval(related_value(action))
+    print "axis: ", axis, "v ", v, "action ", action
     p_continue, p_reverse = continueDict[axis][v][action]
     rand = random.nextDouble()
     if rand <= p_continue:
@@ -49,13 +53,51 @@ def chooseAction(continueDict, state):
     else:
         return None
 
+def rateMove(popularity_curr, popularity_plus, popularity_minus):
+    ratePlus = popularity_plus / popularity_curr
+    rateMinus = popularity_minus / popularity_curr
+    return ratePlus, rateMinus
+
+def selectAxis(popularity, ratePlus, rateMinus):
+    '''Choose the next axis to go along
+    
+    We add 1/popularity together, and choose the axis
+    propotional to its 1/popularity. Exception: if the
+    popularity of an axis is 0, we directly choose it.
+    '''
+    acc_1_pop = 0
+    acc_res = []
+    
+    for ax, pop in popularity.iteritems():
+        if (pop == 0):
+            return ax
+        acc_1_pop += (1 / pop)
+        acc_res.append((ax, acc_1_pop))
+
+    rand = random.nextDouble() * acc_1_pop
+    for ax, acc in acc_res:
+        if rand <= acc:
+            return ax
+
+def selectDirection(ratePlus, rateMinus):
+    propPlus = ratePlus / (ratePlus + rateMinus)
+    rand = random.nextDouble()
+    if rand < propPlus:
+        return "plus"
+    else:
+        return "minus"
+
+
+
 def changeAction(changeDict, state):
     '''To decide a new direction when a decision is made to 
     change to a new direction rather than continue or reverse.
 
     the decision is based on the stability of the current state
     on each axis.'''
-    axis = lookupTable[state.prevAction][0]
+
+    
+    axis = related_axis(state.prevAction)
     popularity = {}
     ratePlus   = {}
     rateMinus  = {}
@@ -65,36 +107,15 @@ def changeAction(changeDict, state):
             popularity_curr = changeDict[ax][v]
             popularity_plus = changeDict[ax].get(v+1, 0)
             popularity_minus = changeDict[ax].get(v-1, 0)
-            ratePlus_ = popularity_plus / popularity_curr
-            rateMinus_ = popularity_minus / popularity_curr
-            popularity[ax], ratePlus[ax], rateMinus[ax] = popularity_curr, ratePlus_, rateMinus_
+            
+            popularity[ax] = popularity_curr
+            ratePlus[ax], rateMinus[ax] = rateMove(popularity_curr, popularity_plus, popularity_minus)
 
-
-    totalReciprotocalPop = 0
-    acc_pop = []
-    selected_ax = None
-    for ax, pop in popularity.iteritems():
-        if (pop == 0):
-            selected_ax = ax
-            break
-        totalReciprotocalPop += (1 / pop)
-        acc_pop.append((totalReciprotocalPop, ax))
-
-    #normalize
-    if selected_ax is None:
-        for ap, ax in acc_pop:
-            ap /= totalReciprotocalPop
-        rand = random.nextDouble()
-        for ap, ax in acc_pop:
-            if rand <= ap:
-                selected_ax = ax
-                break
+    selected_ax = selectAxis(popularity, ratePlus, rateMinus)
     assert(selected_ax)
 
     #Next to select directon:
-    propPlus = ratePlus[selected_ax] / (ratePlus[selected_ax] + rateMinus[selected_ax])
-    rand = random.nextDouble()
-    if rand < propPlus:
+    if selectDirection(ratePlus[selected_ax], rateMinus[selected_ax]) == "plus":
         return plusAction[selected_ax]
     else:
         return reverseTable[plusAction[selected_ax]]
@@ -236,8 +257,8 @@ if __name__ == "__main__":
         "MOVE_RIGHT": ("x", 1),
         "MOVE_UP": ("y", -1),
         "MOVE_DOWN": ("y", 1),
-        "TILT_CLOCKWISE" : ("ax",   1),
-        "TILT_ANTICLOCKWISE" : ("ax", -1),
+        "TILT_FORWARD" : ("ax",   1),
+        "TILT_BACKWARD" : ("ax", -1),
         "REVOLVE_CLOCKWISE"  : ("ay",  1),
         "REVOLVE_ANTICLOCKWISE" :("ay", -1),
         "ROTATE_CLOCKWISE"   : ("az",  1),
@@ -248,7 +269,7 @@ if __name__ == "__main__":
         "ZOOM_IN": "ZOOM_OUT",
         "MOVE_LEFT": "MOVE_RIGHT",
         "MOVE_UP": "MOVE_DOWN",
-        "TILT_CLOCKWISE" : "TILT_ANTICLOCKWISE",
+        "TILT_FORWARD" : "TILT_BACKWARD",
         "REVOLVE_CLOCKWISE"  : "REVOLVE_ANTICLOCKWISE",
         "ROTATE_CLOCKWISE"   : "ROTATE_ANTICLOCKWISE"
         }
@@ -261,7 +282,7 @@ if __name__ == "__main__":
             "x" : "MOVE_RIGHT",
             "y" : "MOVE_DOWN",
             "z" : "ZOOM_OUT",
-            "ax" : "TILT_CLOCKWISE",
+            "ax" : "TILT_FORWARD",
             "ay" : "REVOLVE_CLOCKWISE",
             "az" : "ROTATE_CLOCKWISE"
             }
