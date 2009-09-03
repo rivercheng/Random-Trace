@@ -7,8 +7,8 @@ def nextInt(upperbound):
 def nextDouble():
     return random.random()
 
-def lognormal(miu, sigma):
-    return scipy.stats.lognorm.rvs(miu, sigma)[0]
+def lognormal(sigma, scale):
+    return scipy.stats.lognorm.rvs(sigma, scale = scale)[0]
 
 def genextreme(a, b, c):
     return scipy.stats.genextreme.rvs(a, b, c)[0]
