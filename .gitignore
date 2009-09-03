@@ -7,4 +7,6 @@
 test*
 data
 output*
+*.swp
+trace.*
 

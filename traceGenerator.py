@@ -43,7 +43,6 @@ def chooseAction(continueDict, state):
     action = state.prevAction
     axis = related_axis(action)
     v = eval(related_value(action))
-    print "axis: ", axis, "v ", v, "action ", action
     p_continue, p_reverse = continueDict[axis][v][action]
     rand = random.nextDouble()
     if rand <= p_continue:
@@ -130,7 +129,7 @@ def outputActions(actions, state):
     currentTime = state.currentTime
     for item in actions:
         action, t = item
-        print currentTime, action
+        outputTrace(currentTime, action)
         currentTime += t
     return currentTime
 
@@ -154,7 +153,6 @@ def updateState(state, nextAction, newTime):
         else:
             exec ("state."+axis+" += value")
 
-    print(state.x, state.y, state.z, state.ax, state.ay, state.az)
     state.prevAction = nextAction
     state.currentTime = newTime
     return state
@@ -178,12 +176,16 @@ def loop(state, endTime):
         newTime += generateRandomValue(config.intervalDistribution,
                                        config.intervalParameters)
         state = updateState(state, nextAction, newTime)
+def outputTrace(t, action):
+    sec = int(t) // 1000000
+    msec =  int(t) - sec * 1000000
+    print sec, msec, action
 
 def outputBeginTime():
-    print time.time(), "BEGIN"
+    outputTrace(time.time(), "BEGIN")
 
 def outputQuitTime(t):
-    print t, "QUIT"
+    outputTrace(t, "QUIT")
 
 class State:
     def __init__(self, startTime):
@@ -214,7 +216,7 @@ def main():
     endTime       = sessionLength
     state         = State(startTime)
 
-    print endTime
+    #print endTime
     outputBeginTime()
     loop(state, endTime)
     quitTime = generateRandomValue(config.quitTimeDistribution, config.quitTimeParameters)
@@ -245,9 +247,9 @@ if __name__ == "__main__":
         config.continueDict              = cPickle.load(input)
         config.timesDict                 = {}
     
-    print config.beginDict
-    print config.changeDict
-    print config.continueDict
+    #print config.beginDict
+    #print config.changeDict
+    #print config.continueDict
 
     #Define the effect of each possible action (except RESET).
     lookupTable = {
@@ -255,10 +257,10 @@ if __name__ == "__main__":
         "ZOOM_OUT": ("z", 1),
         "MOVE_LEFT":("x", -1),
         "MOVE_RIGHT": ("x", 1),
-        "MOVE_UP": ("y", -1),
-        "MOVE_DOWN": ("y", 1),
-        "TILT_FORWARD" : ("ax",   1),
-        "TILT_BACKWARD" : ("ax", -1),
+        "MOVE_UP": ("y", 1),
+        "MOVE_DOWN": ("y", -1),
+        "TILT_FORWARD" : ("ax",  -1),
+        "TILT_BACKWARD" : ("ax", 1),
         "REVOLVE_CLOCKWISE"  : ("ay",  1),
         "REVOLVE_ANTICLOCKWISE" :("ay", -1),
         "ROTATE_CLOCKWISE"   : ("az",  1),
