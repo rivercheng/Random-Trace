@@ -9,8 +9,8 @@ def generateRandomValue(dist, params):
     distribution.'''
     value = None
     if dist == "lognormal":
-        miu, sigma = params
-        value = random.lognormal(miu, sigma)
+        sigma, scale = params
+        value = random.lognormal(sigma, scale)
     elif dist == "genextreme":
         a, b, c = params
         value = random.genextreme(a, b, c)
@@ -43,7 +43,14 @@ def chooseAction(continueDict, state):
     action = state.prevAction
     axis = related_axis(action)
     v = eval(related_value(action))
-    p_continue, p_reverse = continueDict[axis][v][action]
+    
+    #by default reverse
+    p_continue, p_reverse = 0, 1
+    try:
+        p_continue, p_reverse = continueDict[axis][v][action]
+    except KeyError:
+        pass #use the default value
+    
     rand = random.nextDouble()
     if rand <= p_continue:
         return action
@@ -57,7 +64,7 @@ def rateMove(popularity_curr, popularity_plus, popularity_minus):
     rateMinus = popularity_minus / popularity_curr
     return ratePlus, rateMinus
 
-def selectAxis(popularity, ratePlus, rateMinus):
+def selectAxis(popularity):
     '''Choose the next axis to go along
     
     We add 1/popularity together, and choose the axis
@@ -104,13 +111,20 @@ def changeAction(changeDict, state):
         if ax != axis:
             v = eval("state."+ax)
             popularity_curr = changeDict[ax][v]
+
+            #consider further more steps
             popularity_plus = changeDict[ax].get(v+1, 0)
+            popularity_plus += changeDict[ax].get(v+2, 0)
+            popularity_plus += changeDict[ax].get(v+3, 0)
+            
             popularity_minus = changeDict[ax].get(v-1, 0)
+            popularity_minus += changeDict[ax].get(v-2, 0)
+            popularity_minus += changeDict[ax].get(v-3, 0)
             
             popularity[ax] = popularity_curr
             ratePlus[ax], rateMinus[ax] = rateMove(popularity_curr, popularity_plus, popularity_minus)
 
-    selected_ax = selectAxis(popularity, ratePlus, rateMinus)
+    selected_ax = selectAxis(popularity)
     assert(selected_ax)
 
     #Next to select directon:
