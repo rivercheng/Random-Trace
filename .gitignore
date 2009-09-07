@@ -9,4 +9,6 @@ data
 output*
 *.swp
 trace.*
+*.trace
+res2
 

@@ -1,5 +1,9 @@
 import random
 import scipy.stats
+import numpy
+def set_seed(seed):
+    random.seed(seed)
+    numpy.random.seed(seed)
 
 def nextInt(upperbound):
     return random.randint(0, upperbound-1)

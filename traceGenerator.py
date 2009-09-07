@@ -3,6 +3,7 @@ import extend_random as random
 import time
 import math
 import cPickle
+import sys
 
 def generateRandomValue(dist, params):
     '''Generate a random value following the given
@@ -136,14 +137,22 @@ def changeAction(changeDict, state):
 def chooseBeginAction(beginDict):
     '''In the beginning or after 'RESET', choose the first action
     at the default view point.'''
-    return "ZOOM_IN"
+    accu_dict = {}
+    sum = 0
+    for action, prob in beginDict.iteritems():
+        sum += prob
+        accu_dict[action] = sum
 
+    prob = random.nextDouble()
+    for action, accu in accu_dict.iteritems():
+        if prob <= accu:
+            return action
 
-def outputActions(actions, state):
+def outputActions(fout, actions, state):
     currentTime = state.currentTime
     for item in actions:
         action, t = item
-        outputTrace(currentTime, action)
+        outputTrace(fout, currentTime, action)
         currentTime += t
     return currentTime
 
@@ -171,7 +180,7 @@ def updateState(state, nextAction, newTime):
     state.currentTime = newTime
     return state
 
-def loop(state, endTime):
+def loop(fout, state, endTime):
     '''keep choosing actions and updating the state until the session time
     is expired.'''
     nextAction = None
@@ -186,20 +195,21 @@ def loop(state, endTime):
         times = generateTimes(config.timesDict, nextAction)
         actionList = generateActionList(times, nextAction, config.smallIntervalDistribution,
                                                            config.smallIntervalParameters)
-        newTime = outputActions(actionList, state)
+        newTime = outputActions(fout, actionList, state)
         newTime += generateRandomValue(config.intervalDistribution,
                                        config.intervalParameters)
         state = updateState(state, nextAction, newTime)
-def outputTrace(t, action):
+
+def outputTrace(fout, t, action):
     sec = int(t) // 1000000
     msec =  int(t) - sec * 1000000
-    print sec, msec, action
+    print >>fout, sec, msec, action
 
-def outputBeginTime():
-    outputTrace(time.time(), "BEGIN")
+def outputBeginTime(fout):
+    outputTrace(fout, time.time(), "BEGIN")
 
-def outputQuitTime(t):
-    outputTrace(t, "QUIT")
+def outputQuitTime(fout, t):
+    outputTrace(fout, t, "QUIT")
 
 class State:
     def __init__(self, startTime):
@@ -219,7 +229,7 @@ class Config:
     pass
 
  
-def main():
+def main(fout):
     #choose session length (how long this session takes.
     sessionLength = generateRandomValue(config.sessionLengthDistribution,
                                         config.sessionLengthParameters)
@@ -231,10 +241,10 @@ def main():
     state         = State(startTime)
 
     #print endTime
-    outputBeginTime()
-    loop(state, endTime)
+    outputBeginTime(fout)
+    loop(fout, state, endTime)
     quitTime = generateRandomValue(config.quitTimeDistribution, config.quitTimeParameters)
-    outputQuitTime(state.currentTime + quitTime)
+    outputQuitTime(fout, state.currentTime + quitTime)
     
 if __name__ == "__main__":
     config = Config()
@@ -302,7 +312,21 @@ if __name__ == "__main__":
             "ay" : "REVOLVE_CLOCKWISE",
             "az" : "ROTATE_CLOCKWISE"
             }
-    main()
+
+    random.set_seed(0)
+    if len(sys.argv) > 1:
+        count = int(sys.argv[1])
+
+        if len(sys.argv) > 2:
+            prefix = sys.argv[2]
+
+        for i in range(count):
+            file_name = prefix + str(i) + ".trace"
+            with open(file_name, "w") as f:
+                main(f)
+    
+    else: #output to standard output
+        main(sys.stdout)
 
     
             
