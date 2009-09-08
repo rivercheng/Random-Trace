@@ -11,4 +11,9 @@ output*
 trace.*
 *.trace
 res2
+*.db
+*.eps
+*.tgz
+*.pickle
+*.gz
 

@@ -2,6 +2,7 @@
 from __future__ import with_statement
 import os
 import sys
+import sqlite3
 def parse_line(line):
     '''Parse a line to time and operation
     
@@ -173,22 +174,46 @@ def transit(operation, duration, last_state):
         sys.exit(1)
     return state
 
-def output_state(state, op2id):
+def output_state(state, op2id, conn):
     '''output the state'''
     if state.last_op is not None:
-        print "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%12d\t%30s\t%30s"%\
-            (state.x, state.y, state.z, state.ax, state.ay, state.az,\
+        tup = (state.x, state.y, state.z, state.ax, state.ay, state.az,\
             op2id(state.last_op), op2id(state.next_op), state.count, state.duration,\
             state.last_op, state.next_op)
+        #print "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%12d\t%30s\t%30s" % tup
+        conn.execute("insert into behavior values \
+                     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tup)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print "Usage: " + sys.argv[0] + " <path>"
+    if len(sys.argv) != 3:
+        print "Usage: " + sys.argv[0] + " <path> <db name>"
         sys.exit()
     opt_id, id_opt = create_transformer()
     prev_state = State()
+
+    os.system("rm "+sys.argv[2])
+    
+    conn = sqlite3.connect(sys.argv[2])
+    
+    db = "behavior"
+    cols = ("x", "y", "z", "ax", "ay", "az", "duration", "last_op", "next_op")
+    actions = ("ZOOM_IN", "ZOOM_OUT", "MOVE_LEFT", "MOVE_RIGHT", "MOVE_UP", "MOVE_DOWN", \
+               "TILT_FORWARD", "TILT_BACKWARD", "REVOLVE_CLOCKWISE", "REVOLVE_ANTICLOCKWISE",\
+               "ROTATE_CLOCKWISE", "ROTATE_ANTICLOCKWISE")
+
+    conn.execute("create table "+ db + \
+        "(x integer, y integer, z integer, \
+         ax integer, ay integer, az integer, \
+         last_op_index integer, next_op_index integer, \
+         count integer, duration integer, \
+         last_op text, next_op text)")
+
     for opt, time in parse_files(sys.argv[1]):
         curr_state = transit(opt, time, prev_state)
-        output_state(prev_state, opt_id)
+        output_state(prev_state, opt_id, conn)
         prev_state = curr_state
+
+    for col in cols:
+        conn.execute("CREATE INDEX "+ col + " ON " + db + \
+                "(%s)" % col)
 

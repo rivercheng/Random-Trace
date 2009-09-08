@@ -139,13 +139,19 @@ def chooseBeginAction(beginDict):
     at the default view point.'''
     accu_dict = {}
     sum = 0
-    for action, prob in beginDict.iteritems():
+    for action in sorted(beginDict.keys()):
+        prob = beginDict[action]
+        #print action, prob
         sum += prob
         accu_dict[action] = sum
+        #print action, sum
 
     prob = random.nextDouble()
-    for action, accu in accu_dict.iteritems():
+    for action in sorted(accu_dict.keys()):
+        accu = accu_dict[action]
+        #print action, accu, prob
         if prob <= accu:
+            #print prob, "action ", action
             return action
 
 def outputActions(fout, actions, state):
@@ -247,6 +253,10 @@ def main(fout):
     outputQuitTime(fout, state.currentTime + quitTime)
     
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print "Usage "+sys.argv[0]+ " <pickle file> [count] [prefix]"
+        sys.exit()
+
     config = Config()
     #Session length follows the lognormal distribution.
     config.sessionLengthDistribution = "lognormal"
@@ -265,7 +275,7 @@ if __name__ == "__main__":
     config.intervalDistribution      = "genextreme"
     config.intervalParameters        = (-0.51, 266370, 199870)
 
-    with open("output.pickle") as input:
+    with open(sys.argv[1]) as input:
         config.beginDict                 = cPickle.load(input)
         config.changeDict                = cPickle.load(input)
         config.continueDict              = cPickle.load(input)
@@ -314,11 +324,11 @@ if __name__ == "__main__":
             }
 
     random.set_seed(0)
-    if len(sys.argv) > 1:
-        count = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        count = int(sys.argv[2])
 
-        if len(sys.argv) > 2:
-            prefix = sys.argv[2]
+        if len(sys.argv) > 3:
+            prefix = sys.argv[3]
 
         for i in range(count):
             file_name = prefix + str(i) + ".trace"

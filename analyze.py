@@ -110,7 +110,10 @@ def outputContinueProbability(ranges, reverse_acts, db, f):
     cPickle.dump(changeDict, f)
 
 if __name__ == "__main__":
-    conn = sqlite3.connect(":memory:")
+    if len(sys.argv) != 2:
+        print "Usage " + sys.argv[0] + "<db name>"
+        sys.exit()
+    conn = sqlite3.connect(sys.argv[1])
     db = "behavior"
     
     cols = ("x", "y", "z", "ax", "ay", "az")
@@ -118,28 +121,7 @@ if __name__ == "__main__":
     actions = ("ZOOM_IN", "ZOOM_OUT", "MOVE_LEFT", "MOVE_RIGHT", "MOVE_UP", "MOVE_DOWN", \
                "TILT_FORWARD", "TILT_BACKWARD", "REVOLVE_CLOCKWISE", "REVOLVE_ANTICLOCKWISE",\
                "ROTATE_CLOCKWISE", "ROTATE_ANTICLOCKWISE")
-
-    conn.execute("create table "+ db + \
-        "(x integer, y integer, z integer, \
-         ax integer, ay integer, az integer, \
-         last_op_index integer, next_op_index integer, \
-         count integer, duration integer, \
-         last_op text, next_op text)")
-
-    with open('res', 'r') as f_input:
-        for line in f_input:
-            tup = line.split()
-            conn.execute("insert into behavior values \
-                     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tup)
     
-    for col in cols:
-        conn.execute("CREATE INDEX "+ col + " ON " + db + \
-                "(%s)" % col)
-
-    for col in other_cols:
-        conn.execute("CREATE INDEX "+ col + " ON " + db + \
-                "(%s)" % col)
-
     ranges = []
     for col in cols:
         ranges.append( (col, range(db, col)) )
@@ -156,7 +138,7 @@ if __name__ == "__main__":
     for key, value in list(reverse_acts.iteritems()):
         reverse_acts[value] = key
     
-    with open("output.pickle", 'w') as out_file:
+    with open(sys.argv[1]+".pickle", 'w') as out_file:
         outputBeginProbability(actions, db, out_file)
         outputPopularity(ranges, db, out_file)
         outputContinueProbability(ranges, reverse_acts, db, out_file)
