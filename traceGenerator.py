@@ -46,7 +46,7 @@ def chooseAction(continueDict, state):
     v = eval(related_value(action))
     
     #by default reverse
-    p_continue, p_reverse = 0, 1
+    p_continue, p_reverse = 0.5, 0.5
     try:
         p_continue, p_reverse = continueDict[axis][v][action]
     except KeyError:

@@ -216,4 +216,5 @@ if __name__ == "__main__":
     for col in cols:
         conn.execute("CREATE INDEX "+ col + " ON " + db + \
                 "(%s)" % col)
+    conn.execute("CREATE INDEX cood ON " + db + "(x, y, z, ax, ay, az)")
 

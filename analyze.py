@@ -142,6 +142,22 @@ if __name__ == "__main__":
         outputBeginProbability(actions, db, out_file)
         outputPopularity(ranges, db, out_file)
         outputContinueProbability(ranges, reverse_acts, db, out_file)
+
+    print "General Probability of Actions:"
+    general_prob = {}
+    for action in (actions + ("QUIT", "RESET")):
+        prob =  probability(db, "next_op = '%s'" % action, None)
+        general_prob[action] = prob
+        if prob is not None:
+            print "%30s" % action, ": ", "%0.4f" % prob
+    print
+
+    print "Change Probability:"
+    print "%30s" % "General", ": ", "%0.4f" % probability(db, "next_op != last_op", None)
+    for action in actions:
+        prob = probability(db, "next_op != last_op", "last_op = '%s'" % action)
+        if prob is not None:
+            print "%30s" % action, ": ", "%0.4f" % prob, "%0.4f" % (1 - prob)
     
 
     
