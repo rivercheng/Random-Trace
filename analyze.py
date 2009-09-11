@@ -78,6 +78,7 @@ def outputPopularity(ranges, db, f):
 
 def outputContinueProbability(ranges, reverse_acts, db, f):
     changeDict = {}
+    MIN_COUNT = 10
     print "Change Probability:"
     for col, range_ in ranges:
         print "\tcolumn ", col, " :"
@@ -85,28 +86,42 @@ def outputContinueProbability(ranges, reverse_acts, db, f):
         for value in range_:
             changeDict[col][value] = {}
             for act in acts[col]:
-                #by default, the next action is to reverse.
-                changeDict[col][value][act] = (0, 1)
+                changeDict[col][value][act] = None
                 try:
                     common = "last_op = '%s' AND %s = %d" % (act, col, value)
                     count_ = count(db, common)
                     prob =  prob_change(db, common)
-
                     #check probability of reverse
                     prob_rev =  probability(db, "next_op = '%s'" % reverse_acts[act], \
                             common + " AND duration > %d" % MIN_DURATION)
-
                     prob_reset_quit_ = prob_quit_reset(db, common)
-
                     if prob is not None and prob_rev is not None and prob_reset_quit_ is not None:
-                        print "\t\t%-5d" % value, "%25s" % act, \
-                          "total: %5d" % count_, \
-                          "\tprob: %0.6f" % prob, \
-                          "\tprob_rev: %0.6f" % prob_rev, \
-                          "\tprob_r_q: %0.6f" % prob_reset_quit_
-                        changeDict[col][value][act] = (1-prob, prob_rev)
+                        changeDict[col][value][act] = (count_, 1 - prob, prob_rev, prob_reset_quit_)
                 except ZeroDivisionError:
                     pass
+
+        for value in range_:
+            for act in acts[col]:
+                if changeDict[col][value][act] is None:
+                    #default go to zero
+                    if value < 0:
+                        if act == acts[col][0]:
+                            changeDict[col][value][act] = (0, 0, 1, 0)
+                        else:
+                            changeDict[col][value][act] = (0, 1, 0, 0)
+                    else:
+                        if act == acts[col][0]:
+                            changeDict[col][value][act] = (0, 1, 0, 0)
+                        else:
+                            changeDict[col][value][act] = (0, 0, 1, 0)
+                        
+                count_, prob_con, prob_rev, prob_reset_quit_ = changeDict[col][value][act]
+                print "\t\t%-5d" % value, "%25s" % act, \
+                          "total: %5d" % count_, \
+                          "\tprob: %0.6f" % prob_con, \
+                          "\tprob_rev: %0.6f" % prob_rev, \
+                          "\tprob_r_q: %0.6f" % prob_reset_quit_
+                changeDict[col][value][act] = (prob_con, prob_rev)
     cPickle.dump(changeDict, f)
 
 if __name__ == "__main__":
@@ -126,7 +141,7 @@ if __name__ == "__main__":
     for col in cols:
         ranges.append( (col, range(db, col)) )
     
-    acts = {"x": ("MOVE_LEFT", "MOVE_RIGHT"), "y" : ("MOVE_UP", "MOVE_DOWN"), \
+    acts = {"x": ("MOVE_LEFT", "MOVE_RIGHT"), "y" : ("MOVE_DOWN", "MOVE_UP"), \
             "z" : ("ZOOM_IN", "ZOOM_OUT"), "ax": ("TILT_FORWARD", "TILT_BACKWARD"), \
             "ay": ("REVOLVE_CLOCKWISE", "REVOLVE_ANTICLOCKWISE"), \
             "az": ("ROTATE_CLOCKWISE", "ROTATE_ANTICLOCKWISE")}
