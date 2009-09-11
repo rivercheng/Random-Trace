@@ -109,6 +109,16 @@ def outputContinueProbability(ranges, reverse_acts, db, f):
                     pass
     cPickle.dump(changeDict, f)
 
+def obtainPopularity(ranges, db):
+    popularityDict = {}
+    print "Popularity:"
+    for col, range_ in ranges:
+        popularityDict[col] = {}
+        for value in range_:
+            prob = popularity(db, "%s=%d" % (col, value))
+            popularityDict[col][value] = prob
+    return popularityDict
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print "Usage " + sys.argv[0] + "<db name>"
@@ -132,11 +142,21 @@ if __name__ == "__main__":
         dist.append((c, item))
         sum += c
 
+    ranges = []
+    for col in cols:
+        ranges.append( (col, range(db, col)) )
+
+    popularityDict = obtainPopularity(ranges, db)
+    
     dist.sort(reverse=True)
     if number is None:
         number = len(dist)+1
     for (c, tup) in dist[:number]:
-        print c, c * 1.0 / sum, tup
+        x, y, z, ax, ay, az = tup
+        prob = popularityDict["x"][x] * popularityDict["y"][y] * popularityDict["z"][z]\
+               *popularityDict["ax"][ax] * popularityDict["ay"][ay] * popularityDict["az"][az]
+        prob_real = c * 1.0 / sum
+        print c, prob_real, prob, prob_real / prob, tup
 
 
 
