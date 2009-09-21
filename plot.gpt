@@ -1,0 +1,39 @@
+#!/usr/bin/env gnuplot
+set terminal postscript color enhanced 
+set size 0.6
+
+
+set out 'view_prob_data.eps'
+set title 'Real probability vs Estimated value(real trace)'
+set xlabel 'rank'
+set ylabel 'real / estimated'
+set yr [0:10]
+plot 'view_prob_data' using 0:4 notitle with lines
+
+set out 'view_prob_random.eps'
+set title 'Real probability vs Estimated value(random trace)'
+set xlabel 'rank'
+set ylabel 'real / estimated'
+set yr [0:10]
+plot 'view_prob_random' using 0:4 notitle with lines
+
+set out 'view_prob_comp.eps'
+set title 'random trace vs real trace'
+set xlabel 'rank'
+set ylabel 'random / real'
+set yr [0:10]
+plot 'view_prob_comp' using 0:5 notitle with lines
+
+set out 'view_prob_comp2.eps'
+set title 'real trace vs random trace'
+set xlabel 'rank'
+set ylabel 'real / random'
+set yr [0:10]
+plot 'view_prob_comp2' using 0:5 notitle with lines
+
+set out 'view_prob_comp3.eps'
+set title 'real trace 1 vs real trace 2'
+set xlabel 'rank'
+set ylabel 'real1 / real2'
+set yr [0:10]
+plot 'view_prob_comp3' using 0:5 notitle with lines

@@ -16,4 +16,5 @@ res2
 *.tgz
 *.pickle
 *.gz
+view_prob*
 
