@@ -151,12 +151,17 @@ if __name__ == "__main__":
     dist.sort(reverse=True)
     if number is None:
         number = len(dist)+1
+    result_list = []
     for (c, tup) in dist[:number]:
         x, y, z, ax, ay, az = tup
         prob = popularityDict["x"][x] * popularityDict["y"][y] * popularityDict["z"][z]\
                *popularityDict["ax"][ax] * popularityDict["ay"][ay] * popularityDict["az"][az]
         prob_real = c * 1.0 / sum
-        print c, prob_real, prob, prob_real / prob, tup
+        result_list.append(abs(prob_real - prob))
+
+    result_list.sort(reverse=True)
+    for i in result_list:
+        print i
 
 
 

@@ -120,15 +120,16 @@ def obtainPopularity(ranges, db):
     return popularityDict
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage " + sys.argv[0] + "<db name> [count]"
+    if len(sys.argv) < 3:
+        print "Usage " + sys.argv[0] + "<db1 name> <db2 name> [count]"
         sys.exit()
     number = None
-    if len(sys.argv) > 2:
-        number = int(sys.argv[2])
+    if len(sys.argv) > 3:
+        number = int(sys.argv[3])
 
     conn = sqlite3.connect(sys.argv[1])
     db = "behavior"
+
     
     cols = ("x", "y", "z", "ax", "ay", "az")
 
@@ -149,14 +150,40 @@ if __name__ == "__main__":
     popularityDict = obtainPopularity(ranges, db)
     
     dist.sort(reverse=True)
+
+    conn = sqlite3.connect(sys.argv[2])
+    curr = query("DISTINCT x, y, z, ax, ay, az", db)
+    dist2 = {}
+    sum2  = 0
+    for item in curr:
+        x, y, z, ax, ay, az = item
+        c = count(db, "x = %d AND y = %d and z = %d and ax = %d and ay = %d and az = %d " % item)
+        dist2[item] = c
+        sum2 += c
+    ranges2 = []
+    for col in cols:
+        ranges2.append( (col, range(db, col)) )
+    popularityDict2 = obtainPopularity(ranges2, db)
+
     if number is None:
         number = len(dist)+1
+    result_list = []
     for (c, tup) in dist[:number]:
         x, y, z, ax, ay, az = tup
-        prob = popularityDict["x"][x] * popularityDict["y"][y] * popularityDict["z"][z]\
-               *popularityDict["ax"][ax] * popularityDict["ay"][ay] * popularityDict["az"][az]
+        #prob = popularityDict["x"][x] * popularityDict["y"][y] * popularityDict["z"][z]\
+        #       *popularityDict["ax"][ax] * popularityDict["ay"][ay] * popularityDict["az"][az]
+
         prob_real = c * 1.0 / sum
-        print c, prob_real, prob, prob_real / prob, tup
+        c2 = dist2.get(tup, 0)
+        prob_real_2 = c2 * 1.0 / sum2
+        if prob_real_2 == 0:
+            pass
+        else:
+            result_list.append(prob_real / prob_real_2)
+
+    result_list.sort(reverse=True)
+    for i in result_list:
+        print i
 
 
 

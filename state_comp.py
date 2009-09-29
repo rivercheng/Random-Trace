@@ -1,3 +1,5 @@
+'''Compare on those points who have enough samples'''
+
 from __future__ import with_statement
 import sqlite3
 import sys
@@ -10,6 +12,7 @@ def query(column, db, condition=None):
         query_str += " WHERE "+condition
     #print query_str
     return  conn.execute(query_str)
+
 
 def probability(db, condition, common=None):
     res2 = 1.0
@@ -57,7 +60,7 @@ def outputBeginProbability(actions, db, f):
     for act in actions:
         prob =  probability(db, "next_op = '%s'" % act, \
                 "next_op <> 'QUIT' AND (last_op = 'RESET' OR last_op = 'BEGIN')") 
-        print act, prob
+        #print act, prob
         beginDict[act] = prob
     print
     cPickle.dump(beginDict, f)
@@ -120,43 +123,63 @@ def obtainPopularity(ranges, db):
     return popularityDict
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage " + sys.argv[0] + "<db name> [count]"
+    if len(sys.argv) < 3:
+        print "Usage " + sys.argv[0] + "<db1 name> <db2 name> [threshold=20]"
         sys.exit()
-    number = None
-    if len(sys.argv) > 2:
-        number = int(sys.argv[2])
+    threshold = 20
+    if len(sys.argv) > 3:
+        threshold = int(sys.argv[3])
 
     conn = sqlite3.connect(sys.argv[1])
     db = "behavior"
+
     
     cols = ("x", "y", "z", "ax", "ay", "az")
 
-    curr = query("DISTINCT x, y, z, ax, ay, az", db)
-    dist = []
-    sum  = 0
+    curr = query("DISTINCT x, y, z, ax, ay, az, last_op", db)
+    stat = {}
     
     for item in curr:
-        x, y, z, ax, ay, az = item
-        c = count(db, "x = %d AND y = %d and z = %d and ax = %d and ay = %d and az = %d " % item)
-        dist.append((c, item))
-        sum += c
+        x, y, z, ax, ay, az, last_op = item
+        c = query("next_op", db, "x = %d AND y = %d and z = %d and ax = %d and ay = %d and az = %d and last_op = '%s'" % item)
+        dic = {}
+        total = 0
+        for i in c:
+            dic[i[0]] = dic.get(i[0], 0) + 1
+            total += 1
+        if total < threshold:
+            continue
+        #print item, total
+        for k in dic:
+            dic[k] = dic[k] * 1.0 / total
+        stat[(x,y,z,ax,ay,az,last_op)] = dic
 
-    ranges = []
-    for col in cols:
-        ranges.append( (col, range(db, col)) )
+    stat2 = {}
+    conn = sqlite3.connect(sys.argv[2])
+    for state in stat:
+        curr = query("next_op", db, "x = %d AND y = %d AND z = %d AND ax = %d AND ay = %d and az = %d and last_op = '%s'" % state)
+        dic = {}
+        stat2[state] = dic
+        total = 0
+        for op in curr:
+            dic[op[0]] = dic.get(op[0],  0) + 1
+            total += 1
+        if total > 0:
+            for k in dic:
+                dic[k] = dic[k] * 1.0 / total
 
-    popularityDict = obtainPopularity(ranges, db)
+    for s in stat:
+        print s
+        for op in stat[s]:
+            res = stat2[s].get(op, 0)
+            print op, stat[s][op], res, abs(res - stat[s][op])
+
+
+
     
-    dist.sort(reverse=True)
-    if number is None:
-        number = len(dist)+1
-    for (c, tup) in dist[:number]:
-        x, y, z, ax, ay, az = tup
-        prob = popularityDict["x"][x] * popularityDict["y"][y] * popularityDict["z"][z]\
-               *popularityDict["ax"][ax] * popularityDict["ay"][ay] * popularityDict["az"][az]
-        prob_real = c * 1.0 / sum
-        print c, prob_real, prob, prob_real / prob, tup
+
+
+
 
 
 

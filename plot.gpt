@@ -2,38 +2,125 @@
 set terminal postscript color enhanced 
 set size 0.6
 
-
 set out 'view_prob_data.eps'
 set title 'Real probability vs Estimated value(real trace)'
 set xlabel 'rank'
-set ylabel 'real / estimated'
+set ylabel 'probability'
+#set yr [0:10]
+#plot 'view_prob_data' using 0:4 notitle with lines
+plot 'view_prob_data' using 0:2 title 'real' with lines,\
+     'view_prob_data' using 0:3 title 'estimated' with lines
+
+set out 'view_prob_data_sort.eps'
+set title 'Real probability vs Estimated value(real trace)'
+set xlabel 'rank'
+set ylabel 'real/estimated'
 set yr [0:10]
-plot 'view_prob_data' using 0:4 notitle with lines
+plot 'view_prob_data_sort' using 1 notitle with lines
+set yr [*:*]
+
+set out 'view_prob_data_sort2.eps'
+set title 'Real probability vs Estimated value(real trace)'
+set xlabel 'rank'
+set ylabel 'abs(real-estimated)'
+plot 'view_prob_data_sort_2' using 1 notitle with lines
 
 set out 'view_prob_random.eps'
 set title 'Real probability vs Estimated value(random trace)'
 set xlabel 'rank'
+set ylabel 'probability'
+#set yr [0:10]
+#plot 'view_prob_random' using 0:4 notitle with lines
+plot 'view_prob_random' using 0:2 title 'real' with lines,\
+     'view_prob_random' using 0:3 title 'estimated' with lines
+
+set out 'view_prob_random_sort.eps'
+set title 'Real probability vs Estimated value(random trace)'
+set xlabel 'rank'
 set ylabel 'real / estimated'
 set yr [0:10]
-plot 'view_prob_random' using 0:4 notitle with lines
+plot 'view_prob_random_sort' using 1 notitle with lines
+set yr [*:*]
+
+set out 'view_prob_random_sort2.eps'
+set title 'Real probability vs Estimated value(random trace)'
+set xlabel 'rank'
+set ylabel 'abs(real-estimated)'
+plot 'view_prob_random_sort_2' using 1 notitle with lines
 
 set out 'view_prob_comp.eps'
 set title 'random trace vs real trace'
 set xlabel 'rank'
+set ylabel 'probability'
+#set yr [0:10]
+#plot 'view_prob_comp' using 0:5 notitle with lines
+plot 'view_prob_comp' using 0:2 title 'random' with lines,\
+     'view_prob_comp' using 0:4 title 'real' with lines
+
+set out 'view_prob_comp_sort.eps'
+set title 'random trace vs real trace'
+set xlabel 'rank'
 set ylabel 'random / real'
 set yr [0:10]
-plot 'view_prob_comp' using 0:5 notitle with lines
+plot 'view_prob_comp_sort' using 1 notitle with lines
+set yr [*:*]
+
+set out 'view_prob_comp_sort2.eps'
+set title 'random trace vs real trace'
+set xlabel 'rank'
+set ylabel 'abs(random-real)'
+plot 'view_prob_comp_sort_2' using 1 notitle with lines
 
 set out 'view_prob_comp2.eps'
 set title 'real trace vs random trace'
 set xlabel 'rank'
+set ylabel 'probability'
+#set yr [0:10]
+#plot 'view_prob_comp2' using 0:5 notitle with lines
+plot 'view_prob_comp2' using 0:2 title 'real' with lines,\
+     'view_prob_comp2' using 0:4 title 'random' with lines
+
+set out 'view_prob_comp2_sort.eps'
+set title 'real trace vs random trace'
+set xlabel 'rank'
 set ylabel 'real / random'
 set yr [0:10]
-plot 'view_prob_comp2' using 0:5 notitle with lines
+plot 'view_prob_comp2_sort' using 1 notitle with lines
+set yr [*:*]
+
+set out 'view_prob_comp2_sort_2.eps'
+set title 'real trace vs random trace'
+set xlabel 'rank'
+set ylabel 'abs(real - random)'
+plot 'view_prob_comp2_sort_2' using 1 notitle with lines
 
 set out 'view_prob_comp3.eps'
 set title 'real trace 1 vs real trace 2'
 set xlabel 'rank'
+set ylabel 'probability'
+#set yr [0:10]
+#plot 'view_prob_comp3' using 0:5 notitle with lines
+plot 'view_prob_comp3' using 0:2 title 'trace 1' with lines,\
+     'view_prob_comp3' using 0:4 title 'trace 2' with lines
+
+set out 'view_prob_comp3_sort.eps'
+set title 'real trace 1 vs real trace 2'
+set xlabel 'rank'
 set ylabel 'real1 / real2'
 set yr [0:10]
-plot 'view_prob_comp3' using 0:5 notitle with lines
+plot 'view_prob_comp3_sort' using 1 notitle with lines
+set yr [*:*]
+
+set out 'view_prob_comp3_sort_2.eps'
+set title 'real trace 1 vs real trace 2'
+set xlabel 'rank'
+set ylabel 'abs(real1-real2)'
+plot 'view_prob_comp3_sort_2' using 1 notitle with lines
+
+set out 'view_prob_comp_all_sort_2.eps'
+set title 'real trace 1 vs real trace 2'
+set xlabel 'rank'
+set ylabel 'abs(real1-real2)'
+plot 'view_prob_comp_sort_2' using 1 title 'random vs real' with lines,\
+     'view_prob_comp2_sort_2' using 1 title 'real vs random' with lines,\
+     'view_prob_comp3_sort_2' using 1 title 'trace1 vs trace2' with lines
