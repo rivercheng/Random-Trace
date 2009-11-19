@@ -5,6 +5,7 @@ import sqlite3
 import sys
 import cPickle
 import analyze
+from   math import sqrt
 
 def query(column, db, condition=None):
     query_str = "SELECT "+column+" FROM "+db
@@ -168,11 +169,33 @@ if __name__ == "__main__":
             for k in dic:
                 dic[k] = dic[k] * 1.0 / total
 
+    actions = ("ZOOM_IN", "ZOOM_OUT", "MOVE_LEFT", "MOVE_RIGHT", "MOVE_UP", "MOVE_DOWN", \
+               "TILT_FORWARD", "TILT_BACKWARD", "REVOLVE_CLOCKWISE", "REVOLVE_ANTICLOCKWISE",\
+               "ROTATE_CLOCKWISE", "ROTATE_ANTICLOCKWISE", "RESET", "QUIT")
+    short_actions = ("I", "O", "L", "R", "U", "D", "F", "B", "YC", "YA", "ZC", "ZA", "R", "Q")
+    n = len(actions)
+    f = open("test.pickle", "w")
     for s in stat:
         print s
-        for op in stat[s]:
-            res = stat2[s].get(op, 0)
-            print op, stat[s][op], res, abs(res - stat[s][op])
+        #for op in stat[s]:
+        mse = 0
+        res_lst = []
+        res_lst2 = []
+        for op in actions:
+            res  = stat[s].get(op, 0)
+            res2 = stat2[s].get(op, 0)
+            diff = abs(res - res2)
+            mse += diff * diff
+            print op, res, res2,diff
+            res_lst.append(res)
+            res_lst2.append(res2)
+        print mse, sqrt(mse), sqrt(mse)/n
+        cPickle.dump([res_lst, res_lst2], f)
+        cPickle.dump(short_actions, f)
+        cPickle.dump(["original", "generated"], f)
+        cPickle.dump(sqrt(mse)/n, f)
+        print
+
 
 
 
