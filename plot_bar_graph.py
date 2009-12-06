@@ -18,7 +18,7 @@ def plot_continue_probability():
 
     fig = plt.figure()
     ax  = fig.add_subplot(111)
-    rect = ax.bar(ind, probs, width)
+    rect = ax.bar(ind, probs, width, facecolor='none', hatch='/')
 
     ax.axis(ymin=0, ymax=1)
     ax.set_ylabel('Probability of Continue')
