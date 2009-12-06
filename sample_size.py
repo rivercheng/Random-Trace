@@ -18,10 +18,7 @@ if __name__ == "__main__":
         sys.exit()
     conn = sqlite3.connect(sys.argv[1])
     db = "behavior"
-    
-    actions = ( "MOVE_LEFT", "MOVE_RIGHT", "MOVE_UP", "MOVE_DOWN", "ZOOM_IN", "ZOOM_OUT",
-               "TILT_FORWARD", "TILT_BACKWARD", "REVOLVE_CLOCKWISE", "REVOLVE_ANTICLOCKWISE",
-               "ROTATE_CLOCKWISE", "ROTATE_ANTICLOCKWISE")
+    Threshold = 10
 
     cursor = query("x, y, z, ax, ay, az", db)
     m = {}
@@ -34,7 +31,6 @@ if __name__ == "__main__":
         lst.append((count, viewpoint))
 
     lst.sort(reverse=True)
-    Threshold = 10
     count_lst = [count for (count, vp) in lst]
     total_count = len(count_lst)
     valid_lst = [x for x in count_lst if x > 10]
@@ -81,7 +77,6 @@ if __name__ == "__main__":
     pylab.xlabel("Rank")
     #pylab.yticks([0,1,2,3],[0,1,10,100,1000])
     pylab.savefig(sys.argv[3])
-
 
 
 

@@ -35,7 +35,6 @@ def autolabel(ax, rects):
                     1.01*height, '%0.3f'%height,
                     ha='center', va='bottom')
 
-
 if __name__ == "__main__":
     plot_continue_probability()
 
