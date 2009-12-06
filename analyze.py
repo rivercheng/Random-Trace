@@ -167,8 +167,21 @@ if __name__ == "__main__":
             print "%30s" % action, ": ", "%0.4f" % prob
     print
 
+    print "Continue and Reverse Probability"
+    total_count = 0;
+    continue_count = 0;
+    reverse_count = 0;
+    for action in actions:
+        total_count += count(db, "last_op == '%s'"%action)
+        continue_count += count(db, "last_op == '%s' AND next_op == '%s'"%(action, action))
+        reverse_count += count(db, "last_op == '%s' AND next_op == '%s'"%(action, reverse_acts[action]))
+    print total_count, continue_count, reverse_count, total_count - continue_count - reverse_count
+    print 1 , continue_count * 1.0 / total_count, reverse_count * 1.0 / total_count, (total_count - continue_count - reverse_count) * 1.0 / total_count
+
+
+
     print "Change Probability:"
-    print "%30s" % "General", ": ", "%0.4f" % probability(db, "next_op != last_op", None)
+    print "%30s" % "General", ": ", "%0.4f" % probability(db, "next_op <> last_op", None)
     for action in actions:
         prob = probability(db, "next_op != last_op", "last_op = '%s'" % action)
         if prob is not None:
@@ -176,6 +189,37 @@ if __name__ == "__main__":
     
 
     
+
+    print "Considering two previous actions"
+    cursor = query("last_last_op, last_op, next_op", db)
+    m = {}
+    for res in cursor:
+        last_last_op, last_op, next_op = res
+        if (last_last_op, last_op) in m:
+            m[(last_last_op, last_op)]["total"] = m[(last_last_op, last_op)].get("total", 0) + 1
+            m[(last_last_op, last_op)][next_op] = m[(last_last_op, last_op)].get(next_op, 0) + 1
+        else:
+            m[(last_last_op, last_op)] = {}
+    total = 0
+    first = 0
+    second = 0
+    for k,v in m.iteritems():
+        count_array = []
+        for k2, v2 in v.iteritems():
+            count_array.append(v2)
+        count_array.sort(reverse=True)
+        if count_array:
+            total += count_array[0]
+            first += count_array[1]
+        if len(count_array) > 2:
+            second += count_array[2]
+    print total, first, first+second, first * 1.0 / total, (first+second) * 1.0 /total
+
+
+
+
+
+
 
 
 

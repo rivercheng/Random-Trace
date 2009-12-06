@@ -94,6 +94,7 @@ class State:
             self.az = 0
             self.ay = 0
             self.az = 0
+            self.last_last_op = None
             self.last_op = None
             self.next_op = "END"
             self.count = 0
@@ -105,6 +106,7 @@ class State:
             self.ax = state.ax
             self.ay = state.ay
             self.az = state.az
+            self.last_last_op = state.last_op
             self.last_op = state.next_op
             self.next_op = None
             self.count = state.count
@@ -128,9 +130,9 @@ def transit(operation, duration, last_state):
     else:
         state.count = 0
     if operation == "ZOOM_IN":
-        state.z -= 1
-    elif operation == "ZOOM_OUT":
         state.z += 1
+    elif operation == "ZOOM_OUT":
+        state.z -= 1
     elif operation == "MOVE_LEFT":
         state.x -= 1
     elif operation == "MOVE_RIGHT":
@@ -146,10 +148,10 @@ def transit(operation, duration, last_state):
         state.ax += 1
         state.ax %= 36
     elif operation == "REVOLVE_CLOCKWISE":
-        state.ay += 1
+        state.ay -= 1
         state.ay %= 36
     elif operation == "REVOLVE_ANTICLOCKWISE":
-        state.ay -= 1
+        state.ay += 1
         state.ay %= 36
     elif operation == "ROTATE_CLOCKWISE":
         state.az += 1
@@ -179,10 +181,10 @@ def output_state(state, op2id, conn):
     if state.last_op is not None:
         tup = (state.x, state.y, state.z, state.ax, state.ay, state.az,\
             op2id(state.last_op), op2id(state.next_op), state.count, state.duration,\
-            state.last_op, state.next_op)
+            state.last_last_op, state.last_op, state.next_op)
         #print "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%12d\t%30s\t%30s" % tup
         conn.execute("insert into behavior values \
-                     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tup)
+                     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tup)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -206,6 +208,7 @@ if __name__ == "__main__":
          ax integer, ay integer, az integer, \
          last_op_index integer, next_op_index integer, \
          count integer, duration integer, \
+         last_last_op text,\
          last_op text, next_op text)")
 
     for opt, time in parse_files(sys.argv[1]):
