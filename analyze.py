@@ -77,16 +77,16 @@ def outputPopularity(ranges, db, f):
     cPickle.dump(popularityDict, f)
 
 def outputContinueProbability(ranges, reverse_acts, db, f):
-    changeDict = {}
+    continueDict = {}
     MIN_COUNT = 10
     print "Change Probability:"
     for col, range_ in ranges:
         print "\tcolumn ", col, " :"
-        changeDict[col] = {}
+        continueDict[col] = {}
         for value in range_:
-            changeDict[col][value] = {}
+            continueDict[col][value] = {}
             for act in acts[col]:
-                changeDict[col][value][act] = None
+                continueDict[col][value][act] = None
                 try:
                     common = "last_op = '%s' AND %s = %d" % (act, col, value)
                     count_ = count(db, common)
@@ -96,33 +96,43 @@ def outputContinueProbability(ranges, reverse_acts, db, f):
                             common + " AND duration > %d" % MIN_DURATION)
                     prob_reset_quit_ = prob_quit_reset(db, common)
                     if prob is not None and prob_rev is not None and prob_reset_quit_ is not None:
-                        changeDict[col][value][act] = (count_, 1 - prob, prob_rev, prob_reset_quit_)
+                        continueDict[col][value][act] = (count_, 1 - prob, prob_rev, prob_reset_quit_)
                 except ZeroDivisionError:
                     pass
 
         for value in range_:
             for act in acts[col]:
-                if changeDict[col][value][act] is None:
+                if continueDict[col][value][act] is None:
                     #default go to zero
                     if value < 0:
                         if act == acts[col][0]:
-                            changeDict[col][value][act] = (0, 0, 1, 0)
+                            continueDict[col][value][act] = (0, 0, 1, 0)
                         else:
-                            changeDict[col][value][act] = (0, 1, 0, 0)
+                            continueDict[col][value][act] = (0, 1, 0, 0)
                     else:
                         if act == acts[col][0]:
-                            changeDict[col][value][act] = (0, 1, 0, 0)
+                            continueDict[col][value][act] = (0, 1, 0, 0)
                         else:
-                            changeDict[col][value][act] = (0, 0, 1, 0)
+                            continueDict[col][value][act] = (0, 0, 1, 0)
                         
-                count_, prob_con, prob_rev, prob_reset_quit_ = changeDict[col][value][act]
+                count_, prob_con, prob_rev, prob_reset_quit_ = continueDict[col][value][act]
                 print "\t\t%-5d" % value, "%25s" % act, \
                           "total: %5d" % count_, \
                           "\tprob: %0.6f" % prob_con, \
                           "\tprob_rev: %0.6f" % prob_rev, \
                           "\tprob_r_q: %0.6f" % prob_reset_quit_
-                changeDict[col][value][act] = (prob_con, prob_rev)
-    cPickle.dump(changeDict, f)
+                #continueDict[col][value][act] = (prob_con, prob_rev)
+    cPickle.dump(continueDict, f)
+
+def outputThinktime(f_cont, f_change, f):
+    continue_think_time_lst = []
+    change_think_time_lst   = []
+    for line in open(f_cont):
+        continue_think_time_lst.append(int(line))
+    for line in open(f_change):
+        change_think_time_lst.append(int(line))
+    cPickle.dump(continue_think_time_lst, f)
+    cPickle.dump(change_think_time_lst, f)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -142,9 +152,9 @@ if __name__ == "__main__":
         ranges.append( (col, range(db, col)) )
     
     acts = {"x": ("MOVE_LEFT", "MOVE_RIGHT"), "y" : ("MOVE_DOWN", "MOVE_UP"), \
-            "z" : ("ZOOM_IN", "ZOOM_OUT"), "ax": ("TILT_FORWARD", "TILT_BACKWARD"), \
+            "z" : ("ZOOM_OUT", "ZOOM_IN"), "ax": ("TILT_FORWARD", "TILT_BACKWARD"), \
             "ay": ("REVOLVE_CLOCKWISE", "REVOLVE_ANTICLOCKWISE"), \
-            "az": ("ROTATE_CLOCKWISE", "ROTATE_ANTICLOCKWISE")}
+            "az": ("ROTATE_ANTICLOCKWISE", "ROTATE_CLOCKWISE")}
 
     reverse_acts = {"MOVE_LEFT" : "MOVE_RIGHT", "MOVE_UP":"MOVE_DOWN", "ZOOM_IN":"ZOOM_OUT",\
             "TILT_FORWARD":"TILT_BACKWARD", "REVOLVE_CLOCKWISE":"REVOLVE_ANTICLOCKWISE",\
@@ -157,6 +167,7 @@ if __name__ == "__main__":
         outputBeginProbability(actions, db, out_file)
         outputPopularity(ranges, db, out_file)
         outputContinueProbability(ranges, reverse_acts, db, out_file)
+        outputThinktime("continue_think_time", "change_think_time", out_file)
 
     print "General Probability of Actions:"
     general_prob = {}

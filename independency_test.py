@@ -36,6 +36,8 @@ if __name__ == "__main__":
     total = 0
     for res in cursor:
         x, y, z, ax, ay, az = map(int, res)
+        if x == 0 and y == 0 and z < 10 and ax == 0 and ay == 0 and az == 0:
+            continue
         m[(x, y, z, ax, ay, az)] = m.get((x, y, z, ax, ay, az), 0) + 1
         mx[x] = mx.get(x, 0) + 1
         my[y] = my.get(y, 0) + 1
@@ -45,8 +47,39 @@ if __name__ == "__main__":
         maz[az] = maz.get(az, 0) + 1
         total += 1
 
+    #revise the probability of z value. Remove the effect of default viewpoint
+    left = mz[3]
+    right = mz[-1]
+    diff  = mz[3] - mz[-1]
+    #mz[2] = mz[-1] + diff * 3. /4.
+    #mz[1] = mz[-1] + diff * 2. /4.
+    #mz[0] = mz[-1] + diff * 1. /4.
+
+    f_out = open(sys.argv[2], 'w')
+    for x in mx:
+        print >>f_out, x, mx[x]
+    print >>f_out
+    for y in my:
+        print >>f_out, y, my[y]
+    print >>f_out
+    for z in mz:
+        print >>f_out, z, mz[z]
+    print >>f_out
+    for ax in max:
+        print >>f_out, ax, max[ax]
+    print >>f_out
+    for ay in may:
+        print >>f_out, ay, may[ay]
+    print >>f_out
+    for ax in maz:
+        print >>f_out, az, maz[az]
+    print >>f_out
+
     count_vp_lst = []
     for vp, count in m.iteritems():
+        x, y, z, ax, ay, az = vp
+        if x == 0 and y == 0 and z < 10 and ax == 0 and ay == 0 and az == 0:
+            continue
         count_vp_lst.append((count, vp))
     count_vp_lst.sort(reverse=True)
     

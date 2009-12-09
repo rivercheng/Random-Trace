@@ -22,10 +22,10 @@ def generateRandomValue(dist, params):
         value = params
     return value
 
-def related_value(action):
+def related_value(action, state):
     '''return the name of the related axis of an action'''
     axis = lookupTable[action][0]
-    return "state."+axis
+    return state[axis]
 
 def related_axis(action):
     '''return the name of the related axis of an action'''
@@ -41,29 +41,29 @@ def chooseAction(continueDict, state):
     a probability to continue and a probability to reverse for each
     possible 'z' value.'''
     
-    action = state.prevAction
+    action = state["prevAction"]
     axis = related_axis(action)
-    v = eval(related_value(action))
+    v =    related_value(action, state)
     
     #by default reverse
     p_continue, p_reverse = 0.5, 0.5
     try:
-        p_continue, p_reverse = continueDict[axis][v][action]
+        count, p_continue, p_reverse, p_reset = continueDict[axis][v][action]
+        #print "continue or not?:", axis, v, count, p_continue, p_reverse, p_reset
     except KeyError:
+        print "Out of the range"
         pass #use the default value
     
     rand = random.nextDouble()
+    #print "rand: ", rand, p_continue, p_continue+p_reverse, p_continue+p_reverse+p_reset
     if rand <= p_continue:
         return action
     elif rand <= p_continue + p_reverse:
         return reverseTable[action]
+    elif rand <= p_continue + p_reverse + p_reset:
+        return 'RESET'
     else:
-        return None
-
-def rateMove(popularity_curr, popularity_plus, popularity_minus):
-    ratePlus = popularity_plus / popularity_curr
-    rateMinus = popularity_minus / popularity_curr
-    return ratePlus, rateMinus
+        return 'CHANGE'
 
 def selectAxis(popularity):
     '''Choose the next axis to go along
@@ -83,11 +83,12 @@ def selectAxis(popularity):
 
     rand = random.nextDouble() * acc_1_pop
     for ax, acc in acc_res:
+        #print "rand: ", rand, "axis", ax, "acc ", acc
         if rand <= acc:
             return ax
 
-def selectDirection(ratePlus, rateMinus):
-    propPlus = ratePlus / (ratePlus + rateMinus)
+def selectDirection(popPlus, popMinus):
+    propPlus = popPlus / (popPlus + popMinus)
     rand = random.nextDouble()
     if rand < propPlus:
         return "plus"
@@ -96,42 +97,40 @@ def selectDirection(ratePlus, rateMinus):
 
 
 
-def changeAction(changeDict, state):
+def changeAction(popularityDict, state):
     '''To decide a new direction when a decision is made to 
     change to a new direction rather than continue or reverse.
 
     the decision is based on the stability of the current state
     on each axis.'''
-
-    
-    axis = related_axis(state.prevAction)
+    axis = related_axis(state["prevAction"])
     popularity = {}
-    ratePlus   = {}
-    rateMinus  = {}
+    popularityPlus   = {}
+    popularityMinus  = {}
     for ax in ("x", "y", "z", "ax", "ay", "az"):
-        v = eval("state."+ax)
-        print ax, v, changeDict[ax][v], 1/changeDict[ax][v]
+        v = state[ax]
+        #print ax, v, popularityDict[ax][v], 1/popularityDict[ax][v]
         if ax != axis:
-            v = eval("state."+ax)
-            popularity_curr = changeDict[ax][v]
-
+            popularity_curr = popularityDict[ax][v]
             #consider further more steps
-            popularity_plus = changeDict[ax].get(v+1, 0)
-            popularity_plus += changeDict[ax].get(v+2, 0)
-            popularity_plus += changeDict[ax].get(v+3, 0)
+            popularity_plus = popularityDict[ax].get(v+1, 0)
+            popularity_plus += popularityDict[ax].get(v+2, 0)
+            popularity_plus += popularityDict[ax].get(v+3, 0)
             
-            popularity_minus = changeDict[ax].get(v-1, 0)
-            popularity_minus += changeDict[ax].get(v-2, 0)
-            popularity_minus += changeDict[ax].get(v-3, 0)
+            popularity_minus = popularityDict[ax].get(v-1, 0)
+            popularity_minus += popularityDict[ax].get(v-2, 0)
+            popularity_minus += popularityDict[ax].get(v-3, 0)
             
             popularity[ax] = popularity_curr
-            ratePlus[ax], rateMinus[ax] = rateMove(popularity_curr, popularity_plus, popularity_minus)
+            popularityPlus[ax], popularityMinus[ax] = popularity_plus, popularity_minus
+            #print "curr, plus, minus: ", popularity_curr, popularity_plus, popularity_minus
 
     selected_ax = selectAxis(popularity)
+    #print "selected ax: ", selected_ax
     assert(selected_ax)
 
     #Next to select directon:
-    if selectDirection(ratePlus[selected_ax], rateMinus[selected_ax]) == "plus":
+    if selectDirection(popularityPlus[selected_ax], popularityMinus[selected_ax]) == "plus":
         return plusAction[selected_ax]
     else:
         return reverseTable[plusAction[selected_ax]]
@@ -157,7 +156,7 @@ def chooseBeginAction(beginDict):
             return action
 
 def outputActions(fout, actions, state):
-    currentTime = state.currentTime
+    currentTime = state["currentTime"]
     for item in actions:
         action, t = item
         outputTrace(fout, currentTime, action)
@@ -176,27 +175,30 @@ def generateActionList(times, nextAction, dist, params):
 def updateState(state, nextAction, newTime):
     '''update the state after an action is chosen.'''
     if nextAction == "RESET":
-        state.reset()
+        reset(state)
     else:
         axis, value = lookupTable[nextAction]
         if axis in ("ax", "ay", "az"):
-            exec ("state."+axis+" = (state."+axis+"+ value) % 36")
+            state[axis] = (state[axis]+ value) % 36
         else:
-            exec ("state."+axis+" += value")
+            state[axis] += value
 
-    state.prevAction = nextAction
-    state.currentTime = newTime
+    state["prevAction"] = nextAction
+    state["currentTime"] = newTime
     return state
+
+def thinktime(time_lst):
+    return random.choice(time_lst)
 
 def loop(fout, state, endTime):
     '''keep choosing actions and updating the state until the session time
     is expired.'''
     nextAction = None
-    while(state.currentTime < endTime):
-        if state.prevAction != "BEGIN" and state.prevAction != "RESET":
+    while(state["currentTime"] < endTime):
+        if state["prevAction"] != "BEGIN" and state["prevAction"] != "RESET":
             nextAction = chooseAction(config.continueDict, state)
-            if not nextAction:
-                nextAction = changeAction(config.changeDict, state)
+            if nextAction == "CHANGE":
+                nextAction = changeAction(config.popularityDict, state)
         else:
             nextAction = chooseBeginAction(config.beginDict)
         assert(nextAction is not None)
@@ -204,8 +206,12 @@ def loop(fout, state, endTime):
         actionList = generateActionList(times, nextAction, config.smallIntervalDistribution,
                                                            config.smallIntervalParameters)
         newTime = outputActions(fout, actionList, state)
-        newTime += generateRandomValue(config.intervalDistribution,
-                                       config.intervalParameters)
+        #newTime += generateRandomValue(config.intervalDistribution,
+        #                               config.intervalParameters)
+        if nextAction == state["prevAction"]:
+            newTime += thinktime(config.continue_think_time_lst)
+        else:
+            newTime += thinktime(config.change_think_time_lst)
         state = updateState(state, nextAction, newTime)
 
 def outputTrace(fout, t, action):
@@ -219,25 +225,24 @@ def outputBeginTime(fout):
 def outputQuitTime(fout, t):
     outputTrace(fout, t, "QUIT")
 
-class State:
-    def __init__(self, startTime):
-        self.reset()
-        self.prevAction = "BEGIN"
-        self.currentTime = startTime
+def reset(state):
+    state["x"] = 0
+    state["y"] = 0
+    state["z"] = 0
+    state["ax"] = 0
+    state["ay"] = 0
+    state["az"] = 0
 
-    def reset(self):
-        self.x = 0
-        self.y = 0
-        self.z = 0
-        self.ax = 0
-        self.ay = 0
-        self.az = 0
+def init(state, startTime):
+    reset(state)
+    state["prevAction"] = "BEGIN"
+    state["currentTime"] = startTime
 
 class Config:
     pass
 
  
-def main(fout):
+def main(fout, state):
     #choose session length (how long this session takes.
     sessionLength = generateRandomValue(config.sessionLengthDistribution,
                                         config.sessionLengthParameters)
@@ -246,13 +251,13 @@ def main(fout):
     startTime     = generateRandomValue(config.startTimeDistribution,
                                         config.startTimeParameters)
     endTime       = sessionLength
-    state         = State(startTime)
+    init(state, startTime)
 
     #print endTime
     outputBeginTime(fout)
     loop(fout, state, endTime)
     quitTime = generateRandomValue(config.quitTimeDistribution, config.quitTimeParameters)
-    outputQuitTime(fout, state.currentTime + quitTime)
+    outputQuitTime(fout, state["currentTime"] + quitTime)
     
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -279,14 +284,23 @@ if __name__ == "__main__":
 
     with open(sys.argv[1]) as input:
         config.beginDict                 = cPickle.load(input)
-        config.changeDict                = cPickle.load(input)
+        config.popularityDict            = cPickle.load(input)
         config.continueDict              = cPickle.load(input)
+        config.continue_think_time_lst   = cPickle.load(input)
+        config.change_think_time_lst     = cPickle.load(input)
         config.timesDict                 = {}
-    
-    #print config.beginDict
-    #print config.changeDict
-    #print config.continueDict
 
+    #revise popularityDict 
+    #remove the effect of default viewpoint
+    mz = config.popularityDict["z"]
+    left = mz[3]
+    right = mz[-1]
+    diff  = left - right
+    length = 4
+    mz[2] = right + diff * 3. / 4.
+    mz[1] = right + diff * 2. / 4.
+    mz[0] = right + diff * 1. / 4.
+    
     #Define the effect of each possible action (except RESET).
     lookupTable = {
         "ZOOM_IN": ("z", 1),
@@ -326,6 +340,7 @@ if __name__ == "__main__":
             }
 
     random.set_seed(0)
+    state = {}
     if len(sys.argv) > 2:
         count = int(sys.argv[2])
 
@@ -335,10 +350,9 @@ if __name__ == "__main__":
         for i in range(count):
             file_name = prefix + str(i) + ".trace"
             with open(file_name, "w") as f:
-                main(f)
-    
+                main(f, state)
     else: #output to standard output
-        main(sys.stdout)
+        main(sys.stdout, state)
 
     
             

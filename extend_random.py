@@ -20,6 +20,8 @@ def genextreme(a, b, c):
 def weibull(a, loc, scale):
     return scipy.stats.weibull_min.rvs(a, loc, scale)[0]
 
+def choice(lst):
+    return random.choice(lst)
 
 
 

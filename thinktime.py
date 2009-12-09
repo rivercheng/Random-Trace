@@ -34,7 +34,7 @@ if __name__ == "__main__":
     change_duration = []
     for res in cursor:
         last_op, next_op, duration = res
-        duration = float(duration)/1000000
+        duration = int(duration)
         general_duration.append(duration)
         if last_op == next_op:
             continue_duration.append(duration)
@@ -52,10 +52,13 @@ if __name__ == "__main__":
     for t in change_duration:
         print >>f_change, t
 
+    def usec_to_sec(usec):
+        return usec / 1000000.0
+
     #plot CDF
-    general_cdf = CDF_lst(general_duration, 100)
-    continue_cdf = CDF_lst(continue_duration, 100)
-    change_cdf   = CDF_lst(change_duration, 100)
+    general_cdf = CDF_lst(map(usec_to_sec, general_duration), 100)
+    continue_cdf = CDF_lst(map(usec_to_sec, continue_duration), 100)
+    change_cdf   = CDF_lst(map(usec_to_sec, change_duration), 100)
     y_lst = [y / 100.0 for y in range(101)]
     
 
