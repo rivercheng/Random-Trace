@@ -49,14 +49,16 @@ def chooseAction(continueDict, state):
     p_continue, p_reverse = 0.5, 0.5
     try:
         p_continue, p_reverse = continueDict[axis][v][action]
+        print 'cont', p_continue, 'rev', p_reverse
     except KeyError:
         pass #use the default value
     
     rand = random.nextDouble()
     if rand <= p_continue:
         return action
-    elif rand <= p_continue + p_reverse:
-        return reverseTable[action]
+        print 'to contiue'
+    #elif rand <= p_continue + p_reverse:
+    #    return reverseTable[action]
     else:
         return None
 
@@ -80,6 +82,7 @@ def selectAxis(popularity):
             return ax
         acc_1_pop += (1 / pop)
         acc_res.append((ax, acc_1_pop))
+        print ax, pop, 1 / pop
 
     rand = random.nextDouble() * acc_1_pop
     for ax, acc in acc_res:
@@ -109,11 +112,11 @@ def changeAction(changeDict, state):
     ratePlus   = {}
     rateMinus  = {}
     for ax in ("x", "y", "z", "ax", "ay", "az"):
-        v = eval("state."+ax)
-        print ax, v, changeDict[ax][v], 1/changeDict[ax][v]
-        if ax != axis:
+        #if ax != axis:
             v = eval("state."+ax)
-            popularity_curr = changeDict[ax][v]
+            popularity_curr = changeDict[ax].get(v, 0)
+            if popularity_curr == 0:
+                return reverseTable[state.prevAction]
 
             #consider further more steps
             popularity_plus = changeDict[ax].get(v+1, 0)
@@ -131,6 +134,9 @@ def changeAction(changeDict, state):
     assert(selected_ax)
 
     #Next to select directon:
+    #if selected_ax == axis:
+    #    return reverseTable[state.prevAction]
+
     if selectDirection(ratePlus[selected_ax], rateMinus[selected_ax]) == "plus":
         return plusAction[selected_ax]
     else:
