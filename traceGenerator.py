@@ -168,11 +168,16 @@ def generateTimes(timesDict, state):
 
 def generateActionList(times, nextAction, dist, params):
     actions = []
-    for i in range(times):
-        actions.append((nextAction, generateRandomValue(dist,params)))
+    actions.append((nextAction, 0))
+    if times > 1:
+        for i in range(times - 1):
+            actions.append((nextAction, generateRandomValue(dist,params)))
     return actions
 
-def updateState(state, nextAction, newTime):
+def updateTime(state, newTime):
+    state["currentTime"] = newTime
+
+def updateState(state, nextAction):
     '''update the state after an action is chosen.'''
     if nextAction == "RESET":
         reset(state)
@@ -184,8 +189,6 @@ def updateState(state, nextAction, newTime):
             state[axis] += value
 
     state["prevAction"] = nextAction
-    state["currentTime"] = newTime
-    return state
 
 def thinktime(time_lst):
     return random.choice(time_lst)
@@ -195,24 +198,31 @@ def loop(fout, state, endTime):
     is expired.'''
     nextAction = None
     while(state["currentTime"] < endTime):
+        newTime = state["currentTime"]
         if state["prevAction"] != "BEGIN" and state["prevAction"] != "RESET":
             nextAction = chooseAction(config.continueDict, state)
             if nextAction == "CHANGE":
                 nextAction = changeAction(config.popularityDict, state)
+            if nextAction == state["prevAction"]:
+                newTime += thinktime(config.continue_think_time_lst)
+            else:
+                newTime += thinktime(config.change_think_time_lst)
         else:
             nextAction = chooseBeginAction(config.beginDict)
+
+        if state["prevAction"] != "BEGIN":
+            updateTime(state, newTime) 
+
         assert(nextAction is not None)
         times = generateTimes(config.timesDict, nextAction)
         actionList = generateActionList(times, nextAction, config.smallIntervalDistribution,
                                                            config.smallIntervalParameters)
+
         newTime = outputActions(fout, actionList, state)
-        #newTime += generateRandomValue(config.intervalDistribution,
-        #                               config.intervalParameters)
-        if nextAction == state["prevAction"]:
-            newTime += thinktime(config.continue_think_time_lst)
-        else:
-            newTime += thinktime(config.change_think_time_lst)
-        state = updateState(state, nextAction, newTime)
+        if newTime > 0 :
+            updateTime(state, newTime)
+        
+        updateState(state, nextAction)
 
 def outputTrace(fout, t, action):
     sec = int(t) // 1000000

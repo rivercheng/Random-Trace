@@ -45,8 +45,8 @@ if __name__ == "__main__":
     continue_duration.sort()
     change_duration.sort()
 
-    f_continue = open("continue_think_time", "w")
-    f_change =   open("change_think_time", "w")
+    f_continue = open("continue_think_time"+sys.argv[1], "w")
+    f_change =   open("change_think_time"+sys.argv[1], "w")
     for t in continue_duration:
         print >>f_continue, t
     for t in change_duration:
