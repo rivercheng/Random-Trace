@@ -3,6 +3,7 @@ import sqlite3
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+from correlation import correlation
 MIN_DURATION = 0
 actions = ( "MOVE_LEFT", "MOVE_RIGHT", "MOVE_UP", "MOVE_DOWN", "ZOOM_IN", "ZOOM_OUT",
             "TILT_FORWARD", "TILT_BACKWARD", "REVOLVE_CLOCKWISE", "REVOLVE_ANTICLOCKWISE",
@@ -96,10 +97,11 @@ if __name__ == "__main__":
     rect2 = ax.bar(ind+width, prob_general_2, width, facecolor='none', hatch='\\\\', label="Synthetic")
     ax.axis(ymin=0, ymax=0.5)
     ax.set_ylabel('Probability of Action')
-    ax.set_ylabel('Action')
+    ax.set_xlabel('Action')
     ax.set_xticks(ind+width)
     ax.set_xticklabels(names, fontsize='small')
     ax.legend(loc="upper right")
+    ax.text(5, 0.45, "correlation: %0.3f"%correlation(prob_general_1, prob_general_2), horizontalalignment='center')
     #autolabel(ax, rect1)
     #autolabel(ax, rect2)
     plt.savefig("general_prob_comp.eps")
@@ -119,12 +121,13 @@ if __name__ == "__main__":
     rect1 = ax.bar(ind, prob_continue_1, width, facecolor = 'none', hatch = '//', label="Real")
     rect2 = ax.bar(ind+width, prob_continue_2, width, facecolor='none', hatch='\\\\', label="Synthetic")
     ax.axis(ymin=0, ymax=1)
-    ax.set_ylabel('Probability of Action')
-    ax.set_ylabel('Action')
+    ax.set_ylabel('Probability of Continue')
+    ax.set_xlabel('Previous Action')
     ax.set_xticks(ind+width)
-    names = ["General"] + names
+    names = ["All"] + names
     ax.set_xticklabels(names, fontsize='small')
-    ax.legend(loc="upper right")
+    ax.legend(loc="lower right")
+    ax.text (6,0.9, "correlation: %0.3f"%correlation(prob_continue_1, prob_continue_2), horizontalalignment='center')
     #autolabel(ax, rect1)
     #autolabel(ax, rect2)
     plt.savefig("continue_prob_comp.eps")
