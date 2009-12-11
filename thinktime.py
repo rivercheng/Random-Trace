@@ -63,8 +63,8 @@ if __name__ == "__main__":
     
 
     pylab.semilogx(general_cdf, y_lst, 'k-', label="General", )
-    pylab.semilogx(continue_cdf, y_lst, 'b--', label="Continue")
-    pylab.semilogx(change_cdf, y_lst, 'r-.', label="Change")
+    pylab.semilogx(continue_cdf, y_lst, 'b--', label="Not Repeating")
+    pylab.semilogx(change_cdf, y_lst, 'r-.', label="Repeating")
     pylab.legend(loc='lower right')
     pylab.xlim(0,100)
     pylab.xlabel('time(s)')

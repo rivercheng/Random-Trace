@@ -112,7 +112,7 @@ def changeAction(popularityDict, state):
         #print ax, v, popularityDict[ax][v], 1/popularityDict[ax][v]
         if ax != axis:
             popularity_curr = popularityDict[ax][v]
-            #consider further more steps
+            #consider more steps
             popularity_plus = popularityDict[ax].get(v+1, 0)
             popularity_plus += popularityDict[ax].get(v+2, 0)
             popularity_plus += popularityDict[ax].get(v+3, 0)
@@ -342,7 +342,7 @@ if __name__ == "__main__":
 
     plusAction = {
             "x" : "MOVE_RIGHT",
-            "y" : "MOVE_DOWN",
+            "y" : "MOVE_UP",
             "z" : "ZOOM_IN",
             "ax" : "TILT_BACKWARD",
             "ay" : "REVOLVE_ANTICLOCKWISE",

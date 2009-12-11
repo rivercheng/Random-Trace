@@ -37,6 +37,9 @@ def prob_change(db, condition):
 def prob_quit_reset(db, condition):
     return probability(db, "(next_op = 'QUIT' OR next_op = 'RESET')", condition)
 
+def prob_reset(db, condition):
+    return probability(db, "next_op = 'RESET'", condition)
+
 def popularity(db, condition):
     return probability(db, condition)
 
@@ -94,9 +97,9 @@ def outputContinueProbability(ranges, reverse_acts, db, f):
                     #check probability of reverse
                     prob_rev =  probability(db, "next_op = '%s'" % reverse_acts[act], \
                             common + " AND duration > %d" % MIN_DURATION)
-                    prob_reset_quit_ = prob_quit_reset(db, common)
-                    if prob is not None and prob_rev is not None and prob_reset_quit_ is not None:
-                        continueDict[col][value][act] = (count_, 1 - prob, prob_rev, prob_reset_quit_)
+                    prob_reset_ = prob_reset(db, common)
+                    if prob is not None and prob_rev is not None and prob_reset_ is not None:
+                        continueDict[col][value][act] = (count_, 1 - prob, prob_rev, prob_reset_)
                 except ZeroDivisionError:
                     pass
 
@@ -115,12 +118,12 @@ def outputContinueProbability(ranges, reverse_acts, db, f):
                         else:
                             continueDict[col][value][act] = (0, 0, 1, 0)
                         
-                count_, prob_con, prob_rev, prob_reset_quit_ = continueDict[col][value][act]
+                count_, prob_con, prob_rev, prob_reset_ = continueDict[col][value][act]
                 print "\t\t%-5d" % value, "%25s" % act, \
                           "total: %5d" % count_, \
                           "\tprob: %0.6f" % prob_con, \
                           "\tprob_rev: %0.6f" % prob_rev, \
-                          "\tprob_r_q: %0.6f" % prob_reset_quit_
+                          "\tprob_r_q: %0.6f" % prob_reset_
                 #continueDict[col][value][act] = (prob_con, prob_rev)
     cPickle.dump(continueDict, f)
 

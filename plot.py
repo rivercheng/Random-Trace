@@ -4,9 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cPickle
 import sys
+from correlation import correlation
 
 if len(sys.argv) < 3:
-    print "Usage: " + sys.argv[0] + " <pickle file 1> <pickle file 2>"
+    print "Usage: " + sys.argv[0] + " <real pickle file> <Synthetic pickle file 2>"
     sys.exit()
 
 with open(sys.argv[1]) as input:
@@ -27,6 +28,7 @@ for axis in popularity1:
 
     for v in popularity2[axis]:
         if v not in mergeDict:
+            prop2 = popularity2[axis][v]
             mergeDict[v] = (0, prop2)
 
     v_list = []
@@ -45,13 +47,13 @@ for axis in popularity1:
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    rects1 = ax.bar(ind, prop1_list, width, color='r')
-
-    rects2 = ax.bar(ind+width, prop2_list, width, color='y')
+    rects1 = ax.bar(ind, prop1_list, width, facecolor='none', hatch='//', label='Real')
+    rects2 = ax.bar(ind+width, prop2_list, width, facecolor='none', hatch='\\\\', label='Synthetic')
 
 # add some
-    ax.set_ylabel('Popularity')
-    ax.set_title('Popularity of ' + axis)
+    ax.set_ylabel('Probability')
+    ax.set_xlabel(axis.upper())
+    #ax.set_title('Popularity of ' + axis)
     ax.set_xticks(ind+width)
     xtick_lst = []
     for v in v_list:
@@ -60,8 +62,11 @@ for axis in popularity1:
         else:
             xtick_lst.append("")
     ax.set_xticklabels(xtick_lst)
+    ax.axis(ymin=0, ymax=1)
+    ax.text(N/2 - 1, 0.9, "correlation: %0.3f"%correlation(prop1_list, prop2_list), horizontalalignment='center')
 
-    ax.legend( (rects1[0], rects2[0]), ('Original', 'Generated') )
+    #ax.legend( (rects1[0], rects2[0]), ('Original', 'Generated') )
+    ax.legend()
 
     def autolabel(rects):
         # attach some text labels
