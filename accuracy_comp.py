@@ -48,7 +48,7 @@ def plot_bar_graph(lst1, lst2, lst3, lst4):
     ind = np.arange(3)
     width = 0.2
     meshes = ['Buddha', 'Dragon', 'Thai']
-    methods = ['None', 'Action', 'Vp', 'Vp+Action']
+    methods = ['None', 'Vp', 'Action', 'Vp+Action']
     
     pylab.bar(ind, lst1, width, facecolor='none', hatch='//', label=methods[0])
     pylab.bar(ind+width, lst2, width, facecolor='none', hatch='--', label=methods[1])
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     accuracy_list_vp.append(accuracy_vp)
     accuracy_list_state.append(accuracy_state)
 
-  plot_bar_graph(accuracy_list_global, accuracy_list_cont, accuracy_list_vp, accuracy_list_state)
+  plot_bar_graph(accuracy_list_global, accuracy_list_vp, accuracy_list_cont, accuracy_list_state)
   pylab.savefig('accuracy_comp.eps')
 
 
